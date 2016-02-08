@@ -305,16 +305,19 @@ class Ecloud(object):
 		if self.flag_clean_slices:
 			beam.clean_slices()
 
-		slices = beam.get_slices(self.slicer)
+		#~ slices = beam.get_slices(self.slicer)
+		slice_list = beam.extract_slices(self.slicer)
+		slice_list = slice_list[::-1]
 		
-		for i in xrange(slices.n_slices-1, -1, -1):
+		for slice_obj in slice_list:
 
-			# select particles in the slice
-			ix = slices.particle_indices_of_slice(i)
+			#~ # select particles in the slice
+			#~ ix = slices.particle_indices_of_slice(i)
 
 			# slice size and time step
-			dz = (slices.z_bins[i + 1] - slices.z_bins[i])
-			dt = dz / (beam.beta * c)
+			#~ dz = (slices.z_bins[i + 1] - slices.z_bins[i])
+			dz = slice_obj.slice_info['z_bin_right'] - slice_obj.slice_info['z_bin_left']
+			dt = dz / (slice_obj.beta * c)
 			
 			# define substep
 			if dt>self.Dt_ref:
@@ -327,17 +330,17 @@ class Ecloud(object):
 
 			# beam field 
 			MP_p = MP_light()
-			MP_p.x_mp = beam.x[ix]+self.x_beam_offset
-			MP_p.y_mp = beam.y[ix]+self.y_beam_offset
-			MP_p.nel_mp = beam.x[ix]*0.+beam.particlenumber_per_mp/dz#they have to become cylinders
-			MP_p.N_mp = slices.n_macroparticles_per_slice[i]
+			MP_p.x_mp = slice_obj.x+self.x_beam_offset
+			MP_p.y_mp = slice_obj.y+self.y_beam_offset
+			MP_p.nel_mp = slice_obj.x*0.+slice_obj.particlenumber_per_mp/dz#they have to become cylinders
+			MP_p.N_mp = slice_obj.macroparticlenumber
 			#compute beam field (it assumes electrons!)
 			spacech_ele.recompute_spchg_efield(MP_p)
 			#scatter to electrons
 			Ex_n_beam, Ey_n_beam = spacech_ele.get_sc_eletric_field(MP_e)
 			# go to actual beam particles 
-			Ex_n_beam = -Ex_n_beam * beam.charge/e
-			Ey_n_beam = -Ey_n_beam * beam.charge/e
+			Ex_n_beam = -Ex_n_beam * slice_obj.charge/e
+			Ey_n_beam = -Ey_n_beam * slice_obj.charge/e
 			
 			
 			## compute electron field map
@@ -363,9 +366,9 @@ class Ecloud(object):
 			MP_e = impact_man.backtrack_and_second_emiss(old_pos, MP_e)
 			
 			## kick beam particles
-			fact_kick = beam.charge/(beam.mass*beam.beta*beam.beta*beam.gamma*c*c)*self.L_ecloud
-			beam.xp[ix]+=fact_kick*Ex_sc_p
-			beam.yp[ix]+=fact_kick*Ey_sc_p
+			fact_kick = slice_obj.charge/(slice_obj.mass*slice_obj.beta*slice_obj.beta*slice_obj.gamma*c*c)*self.L_ecloud
+			slice_obj.xp+=fact_kick*Ex_sc_p
+			slice_obj.yp+=fact_kick*Ey_sc_p
 			
 			if self.save_ele_distributions_last_track:
 				self.rho_ele_last_track.append(spacech_ele.rho.copy())
@@ -392,6 +395,10 @@ class Ecloud(object):
 			if self.save_ele_MP_position or self.save_ele_MP_velocity or self.save_ele_MP_size:
 				self.N_MP_last_track.append(MP_e.N_mp)
 				
+		# put the bunch together
+		beam = sum(slice_list)
+		beam.clean_slices() #particle order in the array might have changed
+		
 		if self.save_ele_distributions_last_track:
 			self.rho_ele_last_track = np.array(self.rho_ele_last_track[::-1])
 
