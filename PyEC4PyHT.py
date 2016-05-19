@@ -79,8 +79,7 @@ from scipy.constants import c, e
 class MP_light(object):
 	pass
 
-
-
+				
 class Ecloud(object):
 	def __init__(self, L_ecloud, slicer, Dt_ref, pyecl_input_folder='./', flag_clean_slices = False,
 				slice_by_slice_mode=False, **kwargs):
@@ -217,6 +216,37 @@ class Ecloud(object):
 			self.x_beam_offset = kwargs['x_beam_offset']
 		if 'y_beam_offset' in kwargs.keys():
 			self.y_beam_offset = kwargs['y_beam_offset']
+			
+			
+		# initialize proton density probes
+		self.save_ele_field_probes = False
+		self.x_dens_probes = -1
+		self.y_dens_probes = -1
+		self.r_dens_probes = -1
+		if 'density_probes' in kwargs.keys():
+			self.save_ele_field_probes = True
+			self.density_probes = kwargs['density_probes']
+			self.N_dens_probes = len(self.density_probes)
+			self.x_dens_probes = []
+			self.y_dens_probes = []
+			self.r_dens_probes = []
+			for ii_probe in xrange(self.N_dens_probes):
+				self.x_dens_probes.append([density_probes[ii_probe]['x']-density_probes[ii_probe]['r_obs'],
+											 density_probes[ii_probe]['x'],
+											 density_probes[ii_probe]['x']+density_probes[ii_probe]['r_obs'],
+											 density_probes[ii_probe]['x']])
+											 #density_probes[ii_probe]['x']])
+				self.y_dens_probes.append([density_probes[ii_probe]['y'],
+											 density_probes[ii_probe]['y']-density_probes[ii_probe]['r_obs'],
+											 density_probes[ii_probe]['y'],
+											 density_probes[ii_probe]['y']+density_probes[ii_probe]['r_obs']])
+											 #density_probes[ii_probe]['y']])
+				self.r_dens_probes.append(density_probes[ii_probe]['r_obs'])
+            
+			self.x_dens_probes = np.array(self.x_dens_probes)
+			self.y_dens_probes = np.array(self.y_dens_probes)
+			self.r_dens_probes = np.array(self.r_dens_probes)
+			self.N_points_probes = 4
 		
 		self.N_tracks = 0
 		
@@ -260,18 +290,22 @@ class Ecloud(object):
 			if self.N_tracks>0:
 				print 'Warning: Track skipped because track_only_first_time is True.'
 				return
-				
-		self._reinitialize()
-			
+		
+		slices = beam.get_slices(self.slicer)	
+		n_slices = slices.n_slices	 
+		
+		self._reinitialize(n_slices)
+		
 		if hasattr(beam.particlenumber_per_mp, '__iter__'):
 			raise ValueError('ecloud module assumes same size for all beam MPs')
 
 		if self.flag_clean_slices:
 			beam.clean_slices()
-
-		slices = beam.get_slices(self.slicer)
 		
 		for i in xrange(slices.n_slices-1, -1, -1):
+			
+			# select slice to fill the matrix for the efield at the probes
+			i_curr = (slices.n_slices-1 - i)
 
 			# select particles in the slice
 			ix = slices.particle_indices_of_slice(i)
@@ -279,7 +313,8 @@ class Ecloud(object):
 			# slice size and time step
 			dz = (slices.z_bins[i + 1] - slices.z_bins[i])
 			
-			self._track_single_slice(beam, ix, dz)
+			self._track_single_slice(beam, i_curr, ix, dz)
+		
 
 		self._finalize()
 				
@@ -318,6 +353,7 @@ class Ecloud(object):
 			print 'Warning: efieldmap already exists. I do nothing.'
 			
 	def track_once_and_replace_with_recorded_field_map(self, bunch, delete_ecloud_data=True):	
+		
 		self.save_ele_field = True
 		self.track_only_first_time = True
 		self.track(bunch)
@@ -325,14 +361,14 @@ class Ecloud(object):
 		self.track_only_first_time = False
 		self.replace_with_recorded_field_map(delete_ecloud_data=delete_ecloud_data)
 		
-			
-	def _track_single_slice(self, beam, ix, dz):
+										
+	def _track_single_slice(self, beam, i_curr, ix, dz):
 		
 		MP_e = self.MP_e
 		dynamics = self.dynamics
 		impact_man = self.impact_man
 		spacech_ele = self.spacech_ele
-			
+		
 		dt = dz / (beam.beta * c)
 		
 		# define substep
@@ -342,38 +378,50 @@ class Ecloud(object):
 			N_sub_steps=1
 			
 		Dt_substep = dt/N_sub_steps
-		#print Dt_substep, N_sub_steps, dt
+		#~ #print Dt_substep, N_sub_steps, dt
+		
+		if self.save_ele_field_probes:
+			for ii_probe in xrange(self.N_dens_probes):
+				MP_probes = MP_light()
+				MP_probes.x_mp = self.x_dens_probes[ii_probe]
+				MP_probes.y_mp = self.y_dens_probes[ii_probe]
+				MP_probes.nel_mp = self.x_dens_probes[ii_probe]*0.+1. #fictitious charge of 1 C
+				MP_probes.N_mp = len(self.x_dens_probes[ii_probe])
+				
+				## compute electron field on probe particles
+				Ex_sc_probe, Ey_sc_probe = spacech_ele.get_sc_eletric_field(MP_probes)
 
+				self.Ex_ele_last_track_at_probes[i_curr,ii_probe]=Ex_sc_probe.copy()
+				self.Ey_ele_last_track_at_probes[i_curr,ii_probe]=Ey_sc_probe.copy()
+		
+				
 		# beam field 
 		MP_p = MP_light()
 		MP_p.x_mp = beam.x[ix]+self.x_beam_offset
 		MP_p.y_mp = beam.y[ix]+self.y_beam_offset
 		MP_p.nel_mp = beam.x[ix]*0.+beam.particlenumber_per_mp/dz#they have to become cylinders
-		MP_p.N_mp = len(beam.x[ix])
+		MP_p.N_mp = len(beam.x[ix])	
 		#compute beam field (it assumes electrons!)
 		spacech_ele.recompute_spchg_efield(MP_p)
 		#scatter to electrons
 		Ex_n_beam, Ey_n_beam = spacech_ele.get_sc_eletric_field(MP_e)
-		# go to actual beam particles 
+		#go to actual beam particles 
 		Ex_n_beam = -Ex_n_beam * beam.charge/e
 		Ey_n_beam = -Ey_n_beam * beam.charge/e
-		
+
 		
 		## compute electron field map
 		spacech_ele.recompute_spchg_efield(MP_e)
-		
 		## compute electron field on electrons
 		Ex_sc_n, Ey_sc_n = spacech_ele.get_sc_eletric_field(MP_e)
-		
 		## compute electron field on beam particles
 		Ex_sc_p, Ey_sc_p = spacech_ele.get_sc_eletric_field(MP_p)
-		
 		## Total electric field on electrons
 		Ex_n=Ex_sc_n+Ex_n_beam;
 		Ey_n=Ey_sc_n+Ey_n_beam;
-			
+					
 		## save position before motion step
-		old_pos=MP_e.get_positions()
+		old_pos = MP_e.get_positions()
 		
 		## motion electrons
 		MP_e = dynamics.stepcustomDt(MP_e, Ex_n,Ey_n, Dt_substep=Dt_substep, N_sub_steps=N_sub_steps)
@@ -396,7 +444,7 @@ class Ecloud(object):
 		if self.save_ele_field:
 			self.Ex_ele_last_track.append(spacech_ele.efx.copy())
 			self.Ey_ele_last_track.append(spacech_ele.efy.copy())
-
+		
 		if self.save_ele_MP_position:
 			self.x_MP_last_track.append(MP_e.x_mp.copy())
 			self.y_MP_last_track.append(MP_e.y_mp.copy())
@@ -411,7 +459,7 @@ class Ecloud(object):
 		if self.save_ele_MP_position or self.save_ele_MP_velocity or self.save_ele_MP_size:
 			self.N_MP_last_track.append(MP_e.N_mp)
 
-	def _reinitialize(self):
+	def _reinitialize(self, n_slices):
 		
 		self.MP_e.x_mp[:self.init_N_mp] = self.init_x #it is a mutation and not a binding (and we have tested it :-))
 		self.MP_e.y_mp[:self.init_N_mp] = self.init_y
@@ -435,6 +483,10 @@ class Ecloud(object):
 		if self.save_ele_field:
 			self.Ex_ele_last_track = []
 			self.Ey_ele_last_track = []
+			
+		if self.save_ele_field_probes:		
+			self.Ex_ele_last_track_at_probes = np.zeros((n_slices, self.N_dens_probes, self.N_points_probes)) 
+			self.Ey_ele_last_track_at_probes = np.zeros((n_slices, self.N_dens_probes, self.N_points_probes))
 
 		if self.save_ele_MP_position:
 			self.x_MP_last_track = []
@@ -462,6 +514,10 @@ class Ecloud(object):
 		if self.save_ele_field:	
 			self.Ex_ele_last_track = np.array(self.Ex_ele_last_track[::-1])
 			self.Ey_ele_last_track = np.array(self.Ey_ele_last_track[::-1])
+		
+		if self.save_ele_field_probes:		
+			self.Ex_ele_last_track_at_probes = self.Ex_ele_last_track_at_probes[::-1]
+			self.Ey_ele_last_track_at_probes = self.Ey_ele_last_track_at_probes[::-1]
 
 		if self.save_ele_MP_position:
 			self.x_MP_last_track = np.array(self.x_MP_last_track[::-1])
@@ -481,7 +537,7 @@ class Ecloud(object):
 		self._finalize()
 		self._reinitialize()
 	
-	def _track_in_single_slice_mode(self, beam):
+	def _track_in_single_slice_mode(self):
 		
 		if self.track_only_first_time:
 			raise NotImplementedError(
