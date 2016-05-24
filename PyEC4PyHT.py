@@ -222,6 +222,8 @@ class Ecloud(object):
 		self.save_ele_field_probes = False
 		self.x_probes = -1
 		self.y_probes = -1
+		self.Ex_ele_last_track_at_probes = -1
+		self.Ey_ele_last_track_at_probes = -1
 		if 'probes_position' in kwargs.keys():
 			self.save_ele_field_probes = True
 			self.probes_position = kwargs['probes_position']
@@ -362,19 +364,12 @@ class Ecloud(object):
 		Dt_substep = dt/N_sub_steps
 		#~ #print Dt_substep, N_sub_steps, dt
 		
-		if self.save_ele_field_probes:
-			MP_probes = MP_light()
-			MP_probes.x_mp = self.x_probes
-			MP_probes.y_mp = self.y_probes
-			MP_probes.nel_mp = self.x_probes*0.+1. #fictitious charge of 1 C
-			MP_probes.N_mp = len(self.x_probes)
-			
-			## compute electron field on probe particles
-			Ex_sc_probe, Ey_sc_probe = spacech_ele.get_sc_eletric_field(MP_probes)
-
-			self.Ex_ele_last_track_at_probes.append(Ex_sc_probe.copy())
-			self.Ey_ele_last_track_at_probes.append(Ey_sc_probe.copy())
-		
+		# probes
+		MP_probes = MP_light()
+		MP_probes.x_mp = self.x_probes
+		MP_probes.y_mp = self.y_probes
+		MP_probes.nel_mp = self.x_probes*0.+1. #fictitious charge of 1 C
+		MP_probes.N_mp = len(self.x_probes)	
 				
 		# beam field 
 		MP_p = MP_light()
@@ -395,8 +390,9 @@ class Ecloud(object):
 		spacech_ele.recompute_spchg_efield(MP_e)
 		## compute electron field on electrons
 		Ex_sc_n, Ey_sc_n = spacech_ele.get_sc_eletric_field(MP_e)
-		## compute electron field on beam particles
+		## compute electron field on beam particles and on probe particles
 		Ex_sc_p, Ey_sc_p = spacech_ele.get_sc_eletric_field(MP_p)
+		Ex_sc_probe, Ey_sc_probe = spacech_ele.get_sc_eletric_field(MP_probes)
 		## Total electric field on electrons
 		Ex_n=Ex_sc_n+Ex_n_beam;
 		Ey_n=Ey_sc_n+Ey_n_beam;
@@ -425,6 +421,10 @@ class Ecloud(object):
 		if self.save_ele_field:
 			self.Ex_ele_last_track.append(spacech_ele.efx.copy())
 			self.Ey_ele_last_track.append(spacech_ele.efy.copy())
+		
+		if self.save_ele_field_probes:
+			self.Ex_ele_last_track_at_probes.append(Ex_sc_probe.copy())
+			self.Ey_ele_last_track_at_probes.append(Ey_sc_probe.copy())
 		
 		if self.save_ele_MP_position:
 			self.x_MP_last_track.append(MP_e.x_mp.copy())
