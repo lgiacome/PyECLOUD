@@ -38,7 +38,7 @@ class beam_descr_from_fil:
         coast_dens = 0.
         beam_long_prof_file = None
         
-        print 'Parsing beam file: %s'%beamfilename
+        print('Parsing beam file: %s'%beamfilename)
         
         f=open(beamfilename)
         exec(f.read())

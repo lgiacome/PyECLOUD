@@ -51,31 +51,31 @@
 
 
 from numpy import *
-import beam_and_timing as beatim
+from . import beam_and_timing as beatim
 
 
-from geom_impact_ellip import ellip_cham_geom_object
+from .geom_impact_ellip import ellip_cham_geom_object
 
-from sec_emission_model_ECLOUD import SEY_model_ECLOUD
-from sec_emission_model_accurate_low_ene import SEY_model_acc_low_ene
-from sec_emission_model_ECLOUD_nunif import SEY_model_ECLOUD_non_unif
-from sec_emission_model_cos_low_ener import SEY_model_cos_le
-from sec_emission_model_flat_low_ener import SEY_model_flat_le
-import dynamics_dipole as dyndip
-import dynamics_Boris_f2py as dynB
-import dynamics_strong_B_generalized as dyngen
+from .sec_emission_model_ECLOUD import SEY_model_ECLOUD
+from .sec_emission_model_accurate_low_ene import SEY_model_acc_low_ene
+from .sec_emission_model_ECLOUD_nunif import SEY_model_ECLOUD_non_unif
+from .sec_emission_model_cos_low_ener import SEY_model_cos_le
+from .sec_emission_model_flat_low_ener import SEY_model_flat_le
+from . import dynamics_dipole as dyndip
+from . import dynamics_Boris_f2py as dynB
+from . import dynamics_strong_B_generalized as dyngen
 
-import geom_impact_poly as gip
+from . import geom_impact_poly as gip
 
 
-import MP_system as MPs
-import space_charge_class as scc
-import impact_management_class as imc
-import pyecloud_saver as pysav
-import gas_ionization_class as gic
-import gen_photoemission_class as gpc
+from . import MP_system as MPs
+from . import space_charge_class as scc
+from . import impact_management_class as imc
+from . import pyecloud_saver as pysav
+from . import gas_ionization_class as gic
+from . import gen_photoemission_class as gpc
 
-import parse_beam_file as pbf
+from . import parse_beam_file as pbf
 
 qe=1.602176565e-19;
 c=299792458.;
@@ -289,8 +289,8 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
     
       
 
-    for attr in kwargs.keys():
-            print 'Ecloud init. From kwargs: %s = %s'%(attr, repr(kwargs[attr]))
+    for attr in list(kwargs.keys()):
+            print('Ecloud init. From kwargs: %s = %s'%(attr, repr(kwargs[attr])))
             tmpattr = kwargs[attr]
             exec('%s=tmpattr'%attr)
     
@@ -311,15 +311,15 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
         chamb=ellip_cham_geom_object(x_aper, y_aper, flag_verbose_file=flag_verbose_file)
     elif chamb_type=='polyg' or chamb_type=='polyg_cython':
 
-		import geom_impact_poly_fast_impact as gipfi
-		chamb=gipfi.polyg_cham_geom_object(filename_chm, flag_non_unif_sey,
-									 flag_verbose_file=flag_verbose_file, flag_verbose_stdout=flag_verbose_stdout, flag_assume_convex=flag_assume_convex)
+        from . import geom_impact_poly_fast_impact as gipfi
+        chamb=gipfi.polyg_cham_geom_object(filename_chm, flag_non_unif_sey,
+                                     flag_verbose_file=flag_verbose_file, flag_verbose_stdout=flag_verbose_stdout, flag_assume_convex=flag_assume_convex)
     elif chamb_type=='polyg_numpy':
-		raise ValueError("chamb_type='polyg_numpy' not supported anymore")
+        raise ValueError("chamb_type='polyg_numpy' not supported anymore")
         #~ chamb=gip.polyg_cham_geom_object(filename_chm, flag_non_unif_sey,
                          #~ flag_verbose_file=flag_verbose_file, flag_verbose_stdout=flag_verbose_stdout)
     elif chamb_type=='rect':
-        import geom_impact_rect_fast_impact as girfi
+        from . import geom_impact_rect_fast_impact as girfi
         chamb =  girfi.rect_cham_geom_object(x_aper, y_aper, flag_verbose_file=flag_verbose_file, flag_verbose_stdout=flag_verbose_stdout)                                                                                     
     else:
         raise ValueError('Chamber type not recognized (choose: ellip/rect/polyg)')
@@ -339,17 +339,17 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
                  Nx=b_par.Nx, Ny=b_par.Ny, nimag=b_par.nimag, progress_mapgen_file = (progress_path+'_mapgen'))
     
     if sparse_solver=='klu':
-		print '''sparse_solver: 'klu' no longer supported --> going to PyKLU'''
-		sparse_solver='PyKLU'
-		
+        print('''sparse_solver: 'klu' no longer supported --> going to PyKLU''')
+        sparse_solver='PyKLU'
+        
     spacech_ele = scc.space_charge(chamb, Dh_sc, Dt_sc=Dt_sc, sparse_solver=sparse_solver, PyPICmode=PyPICmode, 
                         f_telescope = f_telescope, target_grid = target_grid, N_nodes_discard = N_nodes_discard, N_min_Dh_main = N_min_Dh_main)
     
     sec_beams_list=[]
     if flag_presence_sec_beams:
         N_sec_beams = len(sec_b_par_list)
-        for ii in xrange(N_sec_beams):
-            print 'Initialize secondary beam %d/%d'%(ii+1, N_sec_beams)
+        for ii in range(N_sec_beams):
+            print('Initialize secondary beam %d/%d'%(ii+1, N_sec_beams))
             sb_par = sec_b_par_list[ii]
             sec_beams_list.append(beatim.beam_and_timing(sb_par.flag_bunched_beam, sb_par.fact_beam, sb_par.coast_dens, sb_par.beam_field_file,lam_th,
                  b_spac=sb_par.b_spac, sigmaz=sb_par.sigmaz,t_offs=sb_par.t_offs, filling_pattern_file=sb_par.filling_pattern_file, Dt=Dt, t_end=t_end,
@@ -362,10 +362,10 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
     
     
     if E0 is not None:
-		kwargs = {'E0':E0}
+        kwargs = {'E0':E0}
     else: #If E0 is not provided use default value for each object
-		kwargs = {}
-		
+        kwargs = {}
+
     if switch_model==0 or switch_model=='ECLOUD':
         sey_mod=SEY_model_ECLOUD(Emax,del_max,R0,**kwargs)
     elif switch_model==1 or switch_model=='ACC_LOW':
@@ -420,7 +420,7 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
         dynamics=dyngen.pusher_strong_B_generalized(Dt, B0x, B0y,  \
                  B_map_file, fact_Bmap, B_zero_thrhld)
     elif track_method == 'BorisMultipole':
-        import dynamics_Boris_multipole as dynmul
+        from . import dynamics_Boris_multipole as dynmul
         dynamics=dynmul.pusher_Boris_multipole(Dt=Dt, N_sub_steps=N_sub_steps, B_multip = B_multip)   
     else:
         raise ValueError("""track_method should be 'Boris' or 'StrongBdip' or 'StrongBgen' or 'BorisMultipole'""")
@@ -428,19 +428,19 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
 
         
     if init_unif_flag==1:
-        print "Adding inital %.2e electrons to the initial distribution"%Nel_init_unif
+        print("Adding inital %.2e electrons to the initial distribution"%Nel_init_unif)
         MP_e.add_uniform_MP_distrib(Nel_init_unif, E_init_unif, x_max_init_unif, x_min_init_unif, y_max_init_unif, y_min_init_unif)
             
     
     if init_unif_edens_flag==1:
-        print "Adding inital %.2e electrons/m^3 to the initial distribution"%init_unif_edens
+        print("Adding inital %.2e electrons/m^3 to the initial distribution"%init_unif_edens)
         MP_e.add_uniform_ele_density(n_ele=init_unif_edens, E_init=E_init_unif_edens, 
         x_max=x_max_init_unif_edens, x_min=x_min_init_unif_edens, 
         y_max=y_max_init_unif_edens, y_min=y_min_init_unif_edens)
         
         
     if filename_init_MP_state!=-1 and filename_init_MP_state is not None:
-        print "Adding inital electrons from: %s"%filename_init_MP_state
+        print("Adding inital electrons from: %s"%filename_init_MP_state)
         MP_e.add_from_file(filename_init_MP_state)
 
     

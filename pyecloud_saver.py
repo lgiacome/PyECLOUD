@@ -53,7 +53,7 @@
 import scipy.io as sio
 import numpy as np
 import os
-import hist_for as histf
+from . import hist_for as histf
 import pickle
 import time
 
@@ -65,14 +65,14 @@ qm=qe/me;
 class pyecloud_saver:
     
     def __init__(self, logfile_path):
-		self.logfile_path = logfile_path
-		print 'Starting pyecloud_saver init.'
-		flog=open(self.logfile_path,'w')
-		flog.write('PyECLOUD Version 5.5.0\n')
-		timestr = time.strftime("%d %b %Y %H:%M:%S", time.localtime())
-		flog.write('Simulation started on %s\n'%timestr)
-		flog.close()
-		
+        self.logfile_path = logfile_path
+        print('Starting pyecloud_saver init.')
+        flog=open(self.logfile_path,'w')
+        flog.write('PyECLOUD Version 5.5.0\n')
+        timestr = time.strftime("%d %b %Y %H:%M:%S", time.localtime())
+        flog.write('Simulation started on %s\n'%timestr)
+        flog.close()
+        
     
     def start_observing(self, MP_e, beamtim, impact_man,
                  r_center, Dt_En_hist, logfile_path, progress_path, flag_detailed_MP_info=0, 
@@ -82,7 +82,7 @@ class pyecloud_saver:
                  save_simulation_state_time_file = -1, 
                  x_min_hist_det=None, x_max_hist_det=None, y_min_hist_det=None, y_max_hist_det=None, Dx_hist_det=None,
                  filen_main_outp = 'Pyecltest', dec_fact_out = 1, stopfile = 'stop'):
-        print 'Start pyecloud_saver observation'
+        print('Start pyecloud_saver observation')
         
         self.filen_main_outp = filen_main_outp
         
@@ -141,7 +141,7 @@ class pyecloud_saver:
         self.flag_video=(flag_movie==1)
         self.rho_video=None
         self.t_video=None
-		
+        
         #efield video
         self.flag_sc_video=(flag_sc_movie==1)
         self.efx_video=None
@@ -178,8 +178,8 @@ class pyecloud_saver:
         self.N_mp_ref_pass=np.zeros(beamtim.N_pass_tot+1) 
         
         if impact_man.flag_seg:
-				self.nel_hist_impact_seg=np.zeros((beamtim.N_pass_tot+1,impact_man.chamb.N_vert),float)
-				self.energ_eV_impact_seg=np.zeros((beamtim.N_pass_tot+1,impact_man.chamb.N_vert),float)
+                self.nel_hist_impact_seg=np.zeros((beamtim.N_pass_tot+1,impact_man.chamb.N_vert),float)
+                self.energ_eV_impact_seg=np.zeros((beamtim.N_pass_tot+1,impact_man.chamb.N_vert),float)
         else:
                 self.nel_hist_impact_seg=-1        
                 self.energ_eV_impact_seg=-1 
@@ -213,7 +213,7 @@ class pyecloud_saver:
             self.x_el_dens_probes = []
             self.y_el_dens_probes = []
             self.r_el_dens_probes = []
-            for ii in xrange(self.N_el_dens_probes):
+            for ii in range(self.N_el_dens_probes):
                 self.x_el_dens_probes.append(el_density_probes[ii]['x'])
                 self.y_el_dens_probes.append(el_density_probes[ii]['y'])
                 self.r_el_dens_probes.append(el_density_probes[ii]['r_obs'])
@@ -250,7 +250,7 @@ class pyecloud_saver:
   
    
         
-        print 'Done init pyecloud_saver.'
+        print('Done init pyecloud_saver.')
         flog=open(self.logfile_path,'a')
         timestr = time.strftime("%d %b %Y %H:%M:%S", time.localtime())
         flog.write('Initialization finished on %s\n'%timestr)
@@ -268,7 +268,7 @@ class pyecloud_saver:
                     sio.savemat(filename_MP_state,{'tt':beamtim.tt_curr,'N_mp':MP_e.N_mp, 'x_mp':MP_e.x_mp[0:MP_e.N_mp], 'y_mp':MP_e.y_mp[0:MP_e.N_mp], 'z_mp':MP_e.z_mp[0:MP_e.N_mp],\
                                                     'vx_mp':MP_e.vx_mp[0:MP_e.N_mp], 'vy_mp':MP_e.vy_mp[0:MP_e.N_mp], 'vz_mp':MP_e.vz_mp[0:MP_e.N_mp], 'nel_mp':MP_e.nel_mp[0:MP_e.N_mp]},oned_as='row')
                     
-                    print 'Save MP state on ' + filename_MP_state
+                    print('Save MP state on ' + filename_MP_state)
                     self.i_obs=self.i_obs+1
                     
         #Simulation state save
@@ -305,7 +305,7 @@ class pyecloud_saver:
                     
                     spacech_ele.PyPICobj.luobj = temp_luobj 
                     
-                    print 'Save simulation state on ' + filename_simulation_state
+                    print('Save simulation state on ' + filename_simulation_state)
                     self.i_obs_sim=self.i_obs_sim+1
         
         # Energy histogram saver            
@@ -325,45 +325,45 @@ class pyecloud_saver:
             if not os.path.exists('rho_video'):
                 os.makedirs('rho_video')
             if self.rho_video is None:
-				self.rho_video=[]
-				self.t_video=[]
+                self.rho_video=[]
+                self.t_video=[]
             if spacech_ele.flag_recomputed_sc:
                 self.rho_video.append(spacech_ele.rho)
                 self.t_video.append(beamtim.tt_curr)  
             if beamtim.flag_new_bunch_pass:
-				self.rho_video=np.array(self.rho_video)
-				self.t_video=np.array(self.t_video)
-				filename_rho='rho_video/rho_pass%d.mat'%(beamtim.pass_numb-1)
-				print 'Saving %s'%filename_rho
-				sio.savemat(filename_rho,{'xg_sc':spacech_ele.xg,'yg_sc':spacech_ele.yg,'t_video':self.t_video,'rho_video':self.rho_video},oned_as='row')
-				print 'Done'
-				self.rho_video=[]
-				self.t_video=[]
+                self.rho_video=np.array(self.rho_video)
+                self.t_video=np.array(self.t_video)
+                filename_rho='rho_video/rho_pass%d.mat'%(beamtim.pass_numb-1)
+                print('Saving %s'%filename_rho)
+                sio.savemat(filename_rho,{'xg_sc':spacech_ele.xg,'yg_sc':spacech_ele.yg,'t_video':self.t_video,'rho_video':self.rho_video},oned_as='row')
+                print('Done')
+                self.rho_video=[]
+                self.t_video=[]
          
         #save efield video
         if self.flag_sc_video:
-			if not os.path.exists('efield_video'):
-				os.makedirs('efield_video')
-			if self.efx_video is None:
-				self.efx_video=[]
-				self.efy_video=[]
-				self.t_efield_video=[]
-			if spacech_ele.flag_recomputed_sc:
-				self.efx_video.append(spacech_ele.efx)
-				self.efy_video.append(spacech_ele.efy)
-				self.t_efield_video.append(beamtim.tt_curr)  
-			if beamtim.flag_new_bunch_pass:
-				self.efx_video=np.array(self.efx_video)
-				self.efy_video=np.array(self.efy_video)
-				self.t_efield_video=np.array(self.t_efield_video)
-				filename_efield='efield_video/efield_pass%d.mat'%(beamtim.pass_numb-1)
-				print 'Saving %s'%filename_efield
-				sio.savemat(filename_efield,{'xg_sc':spacech_ele.xg,'yg_sc':spacech_ele.yg,'t_efield_video':self.t_efield_video,
-										  'efx_video':self.efx_video, 'efy_video':self.efy_video},oned_as='row')
-				print 'Done'
-				self.efx_video=[]
-				self.efy_video=[]
-				self.t_efield_video=[]
+            if not os.path.exists('efield_video'):
+                os.makedirs('efield_video')
+            if self.efx_video is None:
+                self.efx_video=[]
+                self.efy_video=[]
+                self.t_efield_video=[]
+            if spacech_ele.flag_recomputed_sc:
+                self.efx_video.append(spacech_ele.efx)
+                self.efy_video.append(spacech_ele.efy)
+                self.t_efield_video.append(beamtim.tt_curr)  
+            if beamtim.flag_new_bunch_pass:
+                self.efx_video=np.array(self.efx_video)
+                self.efy_video=np.array(self.efy_video)
+                self.t_efield_video=np.array(self.t_efield_video)
+                filename_efield='efield_video/efield_pass%d.mat'%(beamtim.pass_numb-1)
+                print('Saving %s'%filename_efield)
+                sio.savemat(filename_efield,{'xg_sc':spacech_ele.xg,'yg_sc':spacech_ele.yg,'t_efield_video':self.t_efield_video,
+                                          'efx_video':self.efx_video, 'efy_video':self.efy_video},oned_as='row')
+                print('Done')
+                self.efx_video=[]
+                self.efy_video=[]
+                self.t_efield_video=[]
                     
                     
         #save step by step data
@@ -395,7 +395,7 @@ class pyecloud_saver:
             self.cen_density[ii_curr_dec]=sum(MP_e.nel_mp[flag_center])/(np.pi*self.r_center*self.r_center)
             
             if self.flag_el_dens_probes:
-                for ii in xrange(self.N_el_dens_probes):
+                for ii in range(self.N_el_dens_probes):
                     flag_center=((MP_e.x_mp-self.x_el_dens_probes[ii])**2 + (MP_e.y_mp-self.y_el_dens_probes[ii])**2)<self.r_el_dens_probes[ii]**2;
                     flag_center[MP_e.N_mp:]=False
                     self.el_dens_at_probes[ii, ii_curr_dec]=sum(MP_e.nel_mp[flag_center])/(np.pi*self.r_el_dens_probes[ii]**2)
@@ -478,7 +478,7 @@ class pyecloud_saver:
             
             # logfile and progressfile
             timestr = time.strftime("%d %b %Y %H:%M:%S", time.localtime())
-		
+        
             string_tolog= timestr+(' pass. %d/%d Nel_tot=%e N_mp=%d\n'%(beamtim.pass_numb,beamtim.N_pass_tot,sum(MP_e.nel_mp[0:MP_e.N_mp]),MP_e.N_mp))
 
             
@@ -489,9 +489,9 @@ class pyecloud_saver:
                 with open(self.logfile_path,'a') as flog:
                     flog.write(string_tolog) 
             except IOError as err:
-                print 'Got: ',err
-                print 'while trying to write the following line on logfile:'
-                print string_tolog            
+                print('Got: ',err)
+                print('while trying to write the following line on logfile:')
+                print(string_tolog)            
             
 #             flog=open(self.progress_path,'w')
 #             flog.write(('%f'%(float(beamtim.pass_numb)/float(beamtim.N_pass_tot))))
@@ -500,9 +500,9 @@ class pyecloud_saver:
                 with open(self.progress_path,'w') as flog:
                     flog.write(('%f'%(float(beamtim.pass_numb)/float(beamtim.N_pass_tot)))) 
             except IOError as err:
-                print 'Got: ',err
-                print 'while trying to write the following line on progress file:'
-                print '%f'%(float(beamtim.pass_numb)/float(beamtim.N_pass_tot)) 
+                print('Got: ',err)
+                print('while trying to write the following line on progress file:')
+                print('%f'%(float(beamtim.pass_numb)/float(beamtim.N_pass_tot))) 
                 
             
             #stop simulation

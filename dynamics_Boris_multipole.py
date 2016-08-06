@@ -65,7 +65,7 @@ class pusher_Boris_multipole():
     
     def __init__(self, Dt, N_sub_steps=1, B_multip = []):
         
-        print "Tracker: Boris multipole"
+        print("Tracker: Boris multipole")
         
         self.N_sub_steps = N_sub_steps
         self.Dt = Dt
@@ -83,7 +83,7 @@ class pusher_Boris_multipole():
         if len(self.B_multip)>2:
 			raise ValueError('Higher multipoles not yet implemented!')
                    
-        print "N_subst_init=%d"% self.N_sub_steps
+        print("N_subst_init=%d"% self.N_sub_steps)
         
     #@profile
     def step(self, MP_e, Ex_n,Ey_n, Ez_n=0.):

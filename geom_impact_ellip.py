@@ -104,7 +104,7 @@ class ellip_cham_geom_object:
                 x_nan=x_in[mask_nan]
                 y_nan=y_in[mask_nan]
                 fbckt=open('bcktr_errors.txt','a')
-                for ii_bk in xrange(len(y_nan)):
+                for ii_bk in range(len(y_nan)):
                     fbckt.write('%e\t%e\tnan\n'%(x_nan[ii_bk],y_nan[ii_bk]))
                 fbckt.close()
         
@@ -118,7 +118,7 @@ class ellip_cham_geom_object:
        
         
         if sum(abs(t0.imag))>0:
-            print 'imag detected'
+            print('imag detected')
             raise ValueError('Backtracking: complex t0!!!!')
         
         x_int=t0*x_out+(1-t0)*x_in;
@@ -127,55 +127,55 @@ class ellip_cham_geom_object:
         
         
         if flag_robust:
-			flag_impact=(((x_int/a)**2 + (y_int/b)**2)>1);
-			
-			
-			if flag_impact.any():
-				self.N_mp_corrected = self.N_mp_corrected + sum(flag_impact)
-				ntrials=10
-				while (sum(flag_impact)>0 and ntrials>0):
-					t0[flag_impact]=0.9*t0[flag_impact];
-					x_int=t0*x_out+(1-t0)*x_in;
-					y_int=t0*y_out+(1-t0)*y_in;
-					z_int=t0*z_out+(1-t0)*z_in;
-					
-					flag_impact=(((x_int/a)**2 + (y_int/b)**2)>1);
-					ntrials=ntrials-1
-				
-			flag_impact=(((x_int/a)**2 + (y_int/b)**2)>=1);
-			if sum(flag_impact)>0:
-				
-				x_int_pat = x_int[flag_impact]
-				y_int_pat = y_int[flag_impact]
-				
-				if self.flag_verbose_file:
-					fbckt=open('bcktr_errors.txt','a')
-					for ii_bk in xrange(len(x_int_pat)):
-						fbckt.write('%e\t%e\n'%(x_int_pat[ii_bk],y_int_pat[ii_bk]))
-				
-					fbckt.close()
-			
-				
-				x_pr=x_int_pat/a
-				y_pr=y_int_pat/b
-				
-				r_pr=sqrt(x_pr**2+y_pr**2)
-				
-				x_pr=0.99*x_pr/r_pr
-				y_pr=0.99*y_pr/r_pr
-				
-				x_int[flag_impact] = x_pr*a
-				y_int[flag_impact] = y_pr*b
-				
-				
-				
-				
-			flag_impact=(((x_int/a)**2 + (y_int/b)**2)>=1);
-			if sum(flag_impact)>0:   
-				print 'err inside'
-				raise ValueError('Outside after backtracking!!!!')
-			
-			
+            flag_impact=(((x_int/a)**2 + (y_int/b)**2)>1);
+            
+            
+            if flag_impact.any():
+                self.N_mp_corrected = self.N_mp_corrected + sum(flag_impact)
+                ntrials=10
+                while (sum(flag_impact)>0 and ntrials>0):
+                    t0[flag_impact]=0.9*t0[flag_impact];
+                    x_int=t0*x_out+(1-t0)*x_in;
+                    y_int=t0*y_out+(1-t0)*y_in;
+                    z_int=t0*z_out+(1-t0)*z_in;
+                    
+                    flag_impact=(((x_int/a)**2 + (y_int/b)**2)>1);
+                    ntrials=ntrials-1
+                
+            flag_impact=(((x_int/a)**2 + (y_int/b)**2)>=1);
+            if sum(flag_impact)>0:
+                
+                x_int_pat = x_int[flag_impact]
+                y_int_pat = y_int[flag_impact]
+                
+                if self.flag_verbose_file:
+                    fbckt=open('bcktr_errors.txt','a')
+                    for ii_bk in range(len(x_int_pat)):
+                        fbckt.write('%e\t%e\n'%(x_int_pat[ii_bk],y_int_pat[ii_bk]))
+                
+                    fbckt.close()
+            
+                
+                x_pr=x_int_pat/a
+                y_pr=y_int_pat/b
+                
+                r_pr=sqrt(x_pr**2+y_pr**2)
+                
+                x_pr=0.99*x_pr/r_pr
+                y_pr=0.99*y_pr/r_pr
+                
+                x_int[flag_impact] = x_pr*a
+                y_int[flag_impact] = y_pr*b
+                
+                
+                
+                
+            flag_impact=(((x_int/a)**2 + (y_int/b)**2)>=1);
+            if sum(flag_impact)>0:   
+                print('err inside')
+                raise ValueError('Outside after backtracking!!!!')
+            
+            
     
         
         

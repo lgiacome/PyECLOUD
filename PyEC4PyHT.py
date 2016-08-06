@@ -52,23 +52,23 @@
 
 
 
-from geom_impact_ellip import ellip_cham_geom_object
-import geom_impact_poly as gip
-from sec_emission_model_ECLOUD import SEY_model_ECLOUD
-from sec_emission_model_accurate_low_ene import SEY_model_acc_low_ene
-from sec_emission_model_ECLOUD_nunif import SEY_model_ECLOUD_non_unif
-from sec_emission_model_cos_low_ener import SEY_model_cos_le
-from sec_emission_model_flat_low_ener import SEY_model_flat_le
-import dynamics_dipole as dyndip
-import dynamics_Boris_f2py as dynB
-import dynamics_strong_B_generalized as dyngen
+from .geom_impact_ellip import ellip_cham_geom_object
+from . import geom_impact_poly as gip
+from .sec_emission_model_ECLOUD import SEY_model_ECLOUD
+from .sec_emission_model_accurate_low_ene import SEY_model_acc_low_ene
+from .sec_emission_model_ECLOUD_nunif import SEY_model_ECLOUD_non_unif
+from .sec_emission_model_cos_low_ener import SEY_model_cos_le
+from .sec_emission_model_flat_low_ener import SEY_model_flat_le
+from . import dynamics_dipole as dyndip
+from . import dynamics_Boris_f2py as dynB
+from . import dynamics_strong_B_generalized as dyngen
 
-import MP_system as MPs
-import space_charge_class as scc
-import impact_management_class as imc
+from . import MP_system as MPs
+from . import space_charge_class as scc
+from . import impact_management_class as imc
 
-import gas_ionization_class as gic
-import gen_photoemission_class as gpc
+from . import gas_ionization_class as gic
+from . import gen_photoemission_class as gpc
 
 
 
@@ -86,9 +86,9 @@ class Ecloud(object):
                 slice_by_slice_mode=False, space_charge_obj=None, **kwargs):
         
         
-        print 'PyECLOUD Version 5.5.0'
-        print 'PyHEADTAIL module'
-        print 'Initializing ecloud from folder: '+pyecl_input_folder
+        print('PyECLOUD Version 5.5.0')
+        print('PyHEADTAIL module')
+        print('Initializing ecloud from folder: '+pyecl_input_folder)
         self.slicer = slicer
         self.Dt_ref = Dt_ref
         self.L_ecloud = L_ecloud	
@@ -122,8 +122,8 @@ class Ecloud(object):
         f_telescope, target_grid, N_nodes_discard, N_min_Dh_main = \
         read_parameter_files_pyhdtl(pyecl_input_folder)
         
-        for attr in kwargs.keys():
-            print 'Ecloud init. From kwargs: %s = %s'%(attr, repr(kwargs[attr]))
+        for attr in list(kwargs.keys()):
+            print('Ecloud init. From kwargs: %s = %s'%(attr, repr(kwargs[attr])))
             tmpattr = kwargs[attr]
             exec('%s=tmpattr'%attr)
                 
@@ -137,7 +137,7 @@ class Ecloud(object):
         if chamb_type=='ellip':
             chamb=ellip_cham_geom_object(x_aper, y_aper, flag_verbose_file=flag_verbose_file)
         elif chamb_type=='polyg' or chamb_type=='polyg_cython':
-                import geom_impact_poly_fast_impact as gipfi
+                from . import geom_impact_poly_fast_impact as gipfi
                 chamb=gipfi.polyg_cham_geom_object(filename_chm, flag_non_unif_sey,
                                              flag_verbose_file=flag_verbose_file, flag_verbose_stdout=flag_verbose_stdout, flag_assume_convex=flag_assume_convex)
         elif chamb_type=='polyg_numpy':
@@ -145,7 +145,7 @@ class Ecloud(object):
             #~ chamb=gip.polyg_cham_geom_object(filename_chm, flag_non_unif_sey,
                              #~ flag_verbose_file=flag_verbose_file, flag_verbose_stdout=flag_verbose_stdout)
         elif chamb_type=='rect':
-            import geom_impact_rect_fast_impact as girfi
+            from . import geom_impact_rect_fast_impact as girfi
             chamb =  girfi.rect_cham_geom_object(x_aper, y_aper, flag_verbose_file=flag_verbose_file, flag_verbose_stdout=flag_verbose_stdout)                                                                                     
         else:
             raise ValueError('Chamber type not recognized (choose: ellip/rect/polyg)')
@@ -159,7 +159,7 @@ class Ecloud(object):
 
         
         if sparse_solver=='klu':
-            print '''sparse_solver: 'klu' no longer supported --> going to PyKLU'''
+            print('''sparse_solver: 'klu' no longer supported --> going to PyKLU''')
             sparse_solver='PyKLU'
         
         if space_charge_obj is not None:
@@ -196,34 +196,34 @@ class Ecloud(object):
             #~ dynamics=dyngen.pusher_strong_B_generalized(Dt, B0x, B0y,  \
                      #~ B_map_file, fact_Bmap, B_zero_thrhld) 
         elif track_method == 'BorisMultipole':
-            import dynamics_Boris_multipole as dynmul
+            from . import dynamics_Boris_multipole as dynmul
             dynamics=dynmul.pusher_Boris_multipole(Dt=Dt, N_sub_steps=N_sub_steps, B_multip = B_multip)   
         else:
             raise ValueError("""track_method should be 'Boris' or 'BorisMultipole' - others are not implemented in the PyEC4PyHT module""")
                
 
         if init_unif_flag==1:
-            print "Adding inital %.2e electrons to the initial distribution"%Nel_init_unif
+            print("Adding inital %.2e electrons to the initial distribution"%Nel_init_unif)
             MP_e.add_uniform_MP_distrib(Nel_init_unif, E_init_unif, x_max_init_unif, x_min_init_unif, y_max_init_unif, y_min_init_unif)
                 
         
         if init_unif_edens_flag==1:
-            print "Adding inital %.2e electrons/m^3 to the initial distribution"%init_unif_edens
+            print("Adding inital %.2e electrons/m^3 to the initial distribution"%init_unif_edens)
             MP_e.add_uniform_ele_density(n_ele=init_unif_edens, E_init=E_init_unif_edens, 
             x_max=x_max_init_unif_edens, x_min=x_min_init_unif_edens, 
             y_max=y_max_init_unif_edens, y_min=y_min_init_unif_edens)
             
             
         if filename_init_MP_state!=-1 and filename_init_MP_state is not None:
-            print "Adding inital electrons from: %s"%filename_init_MP_state
+            print("Adding inital electrons from: %s"%filename_init_MP_state)
             MP_e.add_from_file(filename_init_MP_state)
         
         
         self.x_beam_offset = 0.
         self.y_beam_offset = 0.	
-        if 'x_beam_offset' in kwargs.keys():
+        if 'x_beam_offset' in list(kwargs.keys()):
             self.x_beam_offset = kwargs['x_beam_offset']
-        if 'y_beam_offset' in kwargs.keys():
+        if 'y_beam_offset' in list(kwargs.keys()):
             self.y_beam_offset = kwargs['y_beam_offset']
             
         # initialize proton density probes
@@ -232,13 +232,13 @@ class Ecloud(object):
         self.y_probes = -1
         self.Ex_ele_last_track_at_probes = -1
         self.Ey_ele_last_track_at_probes = -1
-        if 'probes_position' in kwargs.keys():
+        if 'probes_position' in list(kwargs.keys()):
             self.save_ele_field_probes = True
             self.probes_position = kwargs['probes_position']
             self.N_probes = len(self.probes_position)
             self.x_probes = []
             self.y_probes = []
-            for ii_probe in xrange(self.N_probes):
+            for ii_probe in range(self.N_probes):
                 self.x_probes.append(probes_position[ii_probe]['x'])
                 self.y_probes.append(probes_position[ii_probe]['y'])
 
@@ -285,7 +285,7 @@ class Ecloud(object):
         
         if self.track_only_first_time:
             if self.N_tracks>0:
-                print 'Warning: Track skipped because track_only_first_time is True.'
+                print('Warning: Track skipped because track_only_first_time is True.')
                 return
                 
         self._reinitialize()
@@ -298,7 +298,7 @@ class Ecloud(object):
 
         slices = beam.get_slices(self.slicer)
         
-        for i in xrange(slices.n_slices-1, -1, -1):
+        for i in range(slices.n_slices-1, -1, -1):
 
             # select particles in the slice
             ix = slices.particle_indices_of_slice(i)
@@ -315,11 +315,11 @@ class Ecloud(object):
     def replace_with_recorded_field_map(self, delete_ecloud_data=True):
         
         if self.track_only_first_time:
-            print 'Warning: replace_with_recorded_field_map resets track_only_first_time = False'
+            print('Warning: replace_with_recorded_field_map resets track_only_first_time = False')
             self.track_only_first_time=False
         
         if not hasattr(self, 'efieldmap'):
-            from Transverse_Efield_map_for_frozen_cloud import Transverse_Efield_map
+            from .Transverse_Efield_map_for_frozen_cloud import Transverse_Efield_map
             self.efieldmap = Transverse_Efield_map(xg = self.spacech_ele.xg, yg = self.spacech_ele.yg, 
                 Ex=self.Ex_ele_last_track, Ey=self.Ey_ele_last_track, L_interaction=self.L_ecloud, 
                 slicer = self.slicer,
@@ -345,7 +345,7 @@ class Ecloud(object):
             
             
         else:
-            print 'Warning: efieldmap already exists. I do nothing.'
+            print('Warning: efieldmap already exists. I do nothing.')
             
     def track_once_and_replace_with_recorded_field_map(self, bunch, delete_ecloud_data=True):	
         self.save_ele_field = True

@@ -20,8 +20,8 @@ sim = BuildupSimulation(pyecl_input_folder = sim_folder, filen_main_outp = sim_f
 sim.run()
 
 
-print ''
-print 'Test simulation done!'
-print 'To inspect the results you can run:'
-print '001_comparison_against_reference.py'
-print ''
+print('')
+print('Test simulation done!')
+print('To inspect the results you can run:')
+print('001_comparison_against_reference.py')
+print('')

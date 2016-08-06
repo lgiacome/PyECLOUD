@@ -64,7 +64,7 @@ class photoemission:
     def __init__(self, inv_CDF_refl_photoem_file, k_pe_st, refl_frac, e_pe_sigma, e_pe_max,alimit, \
                 x0_refl, y0_refl, out_radius, chamb, resc_fac):
         
-        print 'Start photoemission init.'
+        print('Start photoemission init.')
         
         if inv_CDF_refl_photoem_file == 'unif_no_file':
             self.flag_unif = True
@@ -88,7 +88,7 @@ class photoemission:
         if y0_refl!=0.:
             raise ValueError('The case y0_refl!=0 is NOT IMPLEMETED yet!!!!')
         
-        print 'Done photoemission init.'
+        print('Done photoemission init.')
 
     def generate(self, MP_e, lambda_t, Dt):
     

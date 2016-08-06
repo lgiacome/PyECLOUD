@@ -51,10 +51,10 @@
 
 
 from numpy import *
-from sec_emission import *
+from .sec_emission import *
 from numpy.random import rand
-import hist_for as histf
-import seg_impact as segi
+from . import hist_for as histf
+from . import seg_impact as segi
 import numpy as np
 
 
@@ -64,7 +64,7 @@ class impact_management:
     def __init__(self, switch_no_increase_energy, chamb, sey_mod, E_th, sigmafit, mufit,
                  Dx_hist, scrub_en_th, Nbin_En_hist, En_hist_max, thresh_low_energy=None, flag_seg=False):
         
-        print 'Start impact man. init.'
+        print('Start impact man. init.')
         
         if flag_seg and chamb.chamb_type!='polyg':
                 raise ValueError("""flag_seg can be True only with chamb_type='polyg'!!!!""") 
@@ -115,7 +115,7 @@ class impact_management:
             
         self.flag_impact = np.array([False]) #just a place holder
             
-        print 'Done impact man. init.'
+        print('Done impact man. init.')
             
     def reset_impact_hist_tot(self):
         self.nel_impact_hist_tot=0.*self.nel_impact_hist_tot
