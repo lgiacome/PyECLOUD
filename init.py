@@ -192,6 +192,8 @@ def read_parameter_files(pyecl_input_folder='./'):
     
     E0 = None
     s_param = None
+    fact_theta = None
+
 
     # multigrid parameters
     f_telescope = None
@@ -251,7 +253,7 @@ def read_parameter_files(pyecl_input_folder='./'):
     x_min_hist_det, x_max_hist_det, y_min_hist_det, y_max_hist_det, Dx_hist_det, dec_fact_out, stopfile, sparse_solver, B_multip,\
     PyPICmode, filename_init_MP_state,\
     init_unif_edens_flag, init_unif_edens, E_init_unif_edens,\
-    x_max_init_unif_edens, x_min_init_unif_edens, y_max_init_unif_edens, y_min_init_unif_edens, flag_assume_convex, E0, s_param,\
+    x_max_init_unif_edens, x_min_init_unif_edens, y_max_init_unif_edens, y_min_init_unif_edens, flag_assume_convex, E0, s_param, fact_theta,\
     filen_main_outp,\
     f_telescope, target_grid, N_nodes_discard, N_min_Dh_main
 
@@ -283,7 +285,7 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
     x_min_hist_det, x_max_hist_det, y_min_hist_det, y_max_hist_det, Dx_hist_det, dec_fact_out, stopfile, sparse_solver, B_multip, \
     PyPICmode, filename_init_MP_state,\
     init_unif_edens_flag, init_unif_edens, E_init_unif_edens,\
-    x_max_init_unif_edens, x_min_init_unif_edens, y_max_init_unif_edens, y_min_init_unif_edens, flag_assume_convex, E0, s_param,\
+    x_max_init_unif_edens, x_min_init_unif_edens, y_max_init_unif_edens, y_min_init_unif_edens, flag_assume_convex, E0, s_param, fact_theta,\
     filen_main_outp,\
     f_telescope, target_grid, N_nodes_discard, N_min_Dh_main = \
     read_parameter_files(pyecl_input_folder)
@@ -372,6 +374,13 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
             kwargs.update({'s':s_param})
         else:
             raise ValueError('s parameter can be changed only in the ECLOUD sec. emission model!')
+
+    if fact_theta is not None:
+        if switch_model==0 or switch_model=='ECLOUD':
+            kwargs.update({'fact_theta': fact_theta})
+        else:
+            raise ValueError('s parameter can be changed only in the ECLOUD sec. emission model!')
+        
         
     if switch_model==0 or switch_model=='ECLOUD':
         sey_mod=SEY_model_ECLOUD(Emax,del_max,R0,**kwargs)
