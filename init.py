@@ -83,6 +83,7 @@ from scipy.constants import e as qe, m_e, c
 #c=299792458.;
 
 def read_parameter_files(pyecl_input_folder='./', skip_beam_files = False):
+
     charge = -qe
     mass = m_e
     switch_model=0
@@ -246,12 +247,12 @@ def read_parameter_files(pyecl_input_folder='./', skip_beam_files = False):
     filen_main_outp = 'Pyecltest'
 
     return (
-        charge,
-        mass,
         b_par,
         x_aper,
         y_aper,
         B,
+        charge,
+        mass,
         gas_ion_flag,
         P_nTorr,
         sigma_ion_MBarn,
@@ -375,12 +376,12 @@ def read_parameter_files(pyecl_input_folder='./', skip_beam_files = False):
 
 def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
     (
-        charge,
-        mass,
         b_par,
         x_aper,
         y_aper,
         B,
+        charge,
+        mass,
         gas_ion_flag,
         P_nTorr,
         sigma_ion_MBarn,
@@ -670,7 +671,7 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
 
 
     if filename_init_MP_state!=-1 and filename_init_MP_state is not None:
-        print "Adding inital cloud particles from: %s"%filename_init_MP_state
+        print "Adding initial cloud particles from: %s"%filename_init_MP_state
         MP_e.add_from_file(filename_init_MP_state)
 
 
