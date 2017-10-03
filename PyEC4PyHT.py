@@ -85,7 +85,7 @@ class MP_light(object):
 
 class Ecloud(object):
     def __init__(self, L_ecloud, slicer, Dt_ref, pyecl_input_folder='./', flag_clean_slices = False,
-                slice_by_slice_mode=False, space_charge_obj=None, MP_e_mass=m_e, MP_e_charge=-e, **kwargs):
+                slice_by_slice_mode=False, space_charge_obj=None, **kwargs):
 
 
         print 'PyECLOUD Version 6.4.1'
@@ -103,6 +103,8 @@ class Ecloud(object):
         x_aper,
         y_aper,
         B,
+        charge,
+        mass,
         gas_ion_flag,
         P_nTorr,
         sigma_ion_MBarn,
@@ -254,7 +256,7 @@ class Ecloud(object):
         MP_e=MPs.MP_system(N_mp_max, nel_mp_ref_0, fact_split, fact_clean,
                            N_mp_regen_low, N_mp_regen, N_mp_after_regen,
                            Dx_hist, Nx_regen, Ny_regen, Nvx_regen, Nvy_regen, Nvz_regen, regen_hist_cut, chamb,
-                           N_mp_soft_regen=N_mp_soft_regen, N_mp_after_soft_regen=N_mp_after_soft_regen, charge=MP_e_charge, mass=MP_e_mass)
+                           N_mp_soft_regen=N_mp_soft_regen, N_mp_after_soft_regen=N_mp_after_soft_regen, charge=charge, mass=mass)
 
 
 
