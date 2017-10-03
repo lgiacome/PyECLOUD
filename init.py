@@ -78,11 +78,14 @@ import gen_photoemission_class as gpc
 import parse_beam_file as pbf
 
 import numpy as np
-
-qe=1.602176565e-19;
-c=299792458.;
+from scipy.constants import e as qe, m_e, c
+#qe=1.602176565e-19;
+#c=299792458.;
 
 def read_parameter_files(pyecl_input_folder='./', skip_beam_files = False):
+
+    charge = -qe
+    mass = m_e
     switch_model=0
     simulation_param_file='simulation_parameters.input'
 
@@ -248,6 +251,8 @@ def read_parameter_files(pyecl_input_folder='./', skip_beam_files = False):
         x_aper,
         y_aper,
         B,
+        charge,
+        mass,
         gas_ion_flag,
         P_nTorr,
         sigma_ion_MBarn,
@@ -375,6 +380,8 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
         x_aper,
         y_aper,
         B,
+        charge,
+        mass,
         gas_ion_flag,
         P_nTorr,
         sigma_ion_MBarn,
@@ -534,9 +541,10 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
     MP_e=MPs.MP_system(N_mp_max, nel_mp_ref_0, fact_split, fact_clean,
                        N_mp_regen_low, N_mp_regen, N_mp_after_regen,
                        Dx_hist, Nx_regen, Ny_regen, Nvx_regen, Nvy_regen, Nvz_regen, regen_hist_cut, chamb,
-                       N_mp_soft_regen=N_mp_soft_regen, N_mp_after_soft_regen=N_mp_after_soft_regen)
+                       N_mp_soft_regen=N_mp_soft_regen, N_mp_after_soft_regen=N_mp_after_soft_regen, 
+                       charge=charge, mass=mass)
 
-    beamtim=beatim.beam_and_timing(b_par.flag_bunched_beam, b_par.fact_beam, b_par.coast_dens, b_par.beam_field_file,lam_th,
+    beamtim=beatim.beam_and_timing(b_par.flag_bunched_beam, b_par.fact_beam, b_par.coast_dens, b_par.q_part, b_par.beam_field_file,lam_th,
                  b_spac=b_par.b_spac, sigmaz=b_par.sigmaz,t_offs=b_par.t_offs, filling_pattern_file=b_par.filling_pattern_file, Dt=Dt, t_end=t_end,
                  beam_long_prof_file=b_par.beam_long_prof_file, Dh_beam_field=b_par.Dh_beam_field, f_telescope_beam = b_par.f_telescope_beam,
                  target_grid_beam = b_par.target_grid_beam, N_nodes_discard_beam = b_par.N_nodes_discard_beam, N_min_Dh_main_beam = b_par.N_min_Dh_main_beam,
@@ -557,7 +565,7 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
         for ii in xrange(N_sec_beams):
             print 'Initialize secondary beam %d/%d'%(ii+1, N_sec_beams)
             sb_par = sec_b_par_list[ii]
-            sec_beams_list.append(beatim.beam_and_timing(sb_par.flag_bunched_beam, sb_par.fact_beam, sb_par.coast_dens, sb_par.beam_field_file,lam_th,
+            sec_beams_list.append(beatim.beam_and_timing(sb_par.flag_bunched_beam, sb_par.fact_beam, sb_par.coast_dens, sb_par.q_part, sb_par.beam_field_file,lam_th,
                  b_spac=sb_par.b_spac, sigmaz=sb_par.sigmaz,t_offs=sb_par.t_offs, filling_pattern_file=sb_par.filling_pattern_file, Dt=Dt, t_end=t_end,
                  beam_long_prof_file=sb_par.beam_long_prof_file, Dh_beam_field=sb_par.Dh_beam_field, f_telescope_beam = sb_par.f_telescope_beam,
                  target_grid_beam = sb_par.target_grid_beam, N_nodes_discard_beam = sb_par.N_nodes_discard_beam, N_min_Dh_main_beam = sb_par.N_min_Dh_main_beam,
@@ -588,13 +596,23 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
         sey_mod=SEY_model_cos_le(Emax,del_max,R0,**kwargs)
     elif switch_model=='flat_low_ene':
         sey_mod=SEY_model_flat_le(Emax,del_max,R0)
+    elif switch_model=='perfect_absorber':
+        sey_mod=None
 
 
     flag_seg = (flag_hist_impact_seg==1)
 
-    impact_man=imc.impact_management(switch_no_increase_energy, chamb, sey_mod, E_th, sigmafit, mufit,
-                 Dx_hist, scrub_en_th, Nbin_En_hist, En_hist_max, thresh_low_energy=thresh_low_energy,
-                 flag_seg=flag_seg, cos_angle_width=cos_angle_width, secondary_angle_distribution=secondary_angle_distribution)
+    if switch_model=='perfect_absorber':
+        import perfect_absorber_class as pac
+        impact_man = pac.impact_management_perfect_absorber(switch_no_increase_energy, chamb, sey_mod, E_th, sigmafit, mufit, Dx_hist, 
+                                                            scrub_en_th, Nbin_En_hist, En_hist_max, thresh_low_energy=thresh_low_energy, 
+                                                            flag_seg=flag_seg, cos_angle_width=cos_angle_width, 
+                                                            secondary_angle_distribution=secondary_angle_distribution)
+    else:
+        impact_man=imc.impact_management(switch_no_increase_energy, chamb, sey_mod, E_th, sigmafit, mufit, Dx_hist, 
+                                         scrub_en_th, Nbin_En_hist, En_hist_max, thresh_low_energy=thresh_low_energy,
+                                         flag_seg=flag_seg, cos_angle_width=cos_angle_width, 
+                                         secondary_angle_distribution=secondary_angle_distribution)
 
     #resgasion_sec_beam_list=[]
     if gas_ion_flag==1:
@@ -641,19 +659,19 @@ def read_input_files_and_init_components(pyecl_input_folder='./', **kwargs):
 
 
     if init_unif_flag==1:
-        print "Adding inital %.2e electrons to the initial distribution"%Nel_init_unif
+        print "Adding initial %.2e cloud particles to the initial distribution"%Nel_init_unif
         MP_e.add_uniform_MP_distrib(Nel_init_unif, E_init_unif, x_max_init_unif, x_min_init_unif, y_max_init_unif, y_min_init_unif)
 
 
     if init_unif_edens_flag==1:
-        print "Adding inital %.2e electrons/m^3 to the initial distribution"%init_unif_edens
+        print "Adding initial %.2e cloud particles/m^3 to the initial distribution"%init_unif_edens
         MP_e.add_uniform_ele_density(n_ele=init_unif_edens, E_init=E_init_unif_edens,
         x_max=x_max_init_unif_edens, x_min=x_min_init_unif_edens,
         y_max=y_max_init_unif_edens, y_min=y_min_init_unif_edens)
 
 
     if filename_init_MP_state!=-1 and filename_init_MP_state is not None:
-        print "Adding inital electrons from: %s"%filename_init_MP_state
+        print "Adding initial cloud particles from: %s"%filename_init_MP_state
         MP_e.add_from_file(filename_init_MP_state)
 
 

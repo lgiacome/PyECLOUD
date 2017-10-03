@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import sqrt
+from scipy.constants import e as qe, m_p, c
 
 class beam_descr_from_fil:
     def __init__(self, beamfilename, betafx_from_mach_parms_file, Dx_from_mach_parms_file, \
@@ -13,7 +14,8 @@ class beam_descr_from_fil:
         nemitty = None
 
 
-        m0_part =  1.672621777e-27 #kg
+        q_part = qe
+        m0_part = m_p #kg
         Dp_p = 0.
 
         Dx = None
@@ -54,8 +56,6 @@ class beam_descr_from_fil:
         if betafy is None:
             betafy = betafy_from_mach_parms_file
 
-        qe=1.602176565e-19;
-        c=299792458.;
 
         energy_J = energy_eV * qe
         gamma_rel= energy_J/(m0_part*c*c)
@@ -83,6 +83,7 @@ class beam_descr_from_fil:
         self.x_beam_pos = x_beam_pos
         self.y_beam_pos = y_beam_pos
 
+        self.q_part = q_part
         self.m0_part = m0_part
         self.energy_eV = energy_eV
         self.energy_J = energy_J
