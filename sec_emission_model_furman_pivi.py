@@ -31,8 +31,10 @@ class SEY_model_Furman_Pivi(object):
         flag_backscattered = np.logical_and(~flag_rediffused, rand < delta_r+delta_e)
         flag_truesec = np.logical_and(~flag_rediffused, ~flag_backscattered)
 
+        # Reflected or backscattered electrons have yield 1 by definition.
         delta = np.ones_like(E_impact_eV, dtype=float)
-        delta[flag_truesec] = delta_ts[flag_truesec] / (1-delta_r[flag_truesec]-delta_e[flag_truesec])
+        # True secondary part has to be adjusted accordingly.
+        delta[flag_truesec] = delta_ts[flag_truesec] / (1.-delta_r[flag_truesec]-delta_e[flag_truesec])
 
         # (4): Generate number of secondaries for every impact
         # Since this is a macro-particle code, where every MP stands for many electrons,
