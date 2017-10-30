@@ -1,7 +1,6 @@
 from __future__ import division, print_function
 import numpy as np
 import numpy.random as random
-#from scipy import e
 
 
 class SEY_model_Furman_Pivi(object):
@@ -19,7 +18,6 @@ class SEY_model_Furman_Pivi(object):
         delta_e = self._delta_e(E_impact_eV, costheta_impact)
         delta_r = self._delta_r(E_impact_eV, costheta_impact)
         delta_ts = self._delta_ts(E_impact_eV, costheta_impact)
-        delta_tot = delta_e + delta_r + delta_ts
 
 
         # (3): Generate probability of number electrons created
@@ -33,25 +31,28 @@ class SEY_model_Furman_Pivi(object):
         mask_e = np.logical_and(~mask_r, rand < delta_r+delta_e)
         mask_ts = np.logical_and(~mask_r, ~mask_e)
 
-        delta_ts_prime = delta_ts / (1 - delta_e - delta_r)
-        p_binom = delta_ts[mask_ts] / self.max_secondaries
-
         delta = np.ones_like(E_impact_eV, dtype=float)
-        delta[mask_ts] = delta_ts[mask_ts] / (1- delta_r[mask_ts] - delta_e[mask_ts])
+        delta[mask_ts] = delta_ts[mask_ts] / (1-delta_r[mask_ts]-delta_e[mask_ts])
+
+        # (4): Generate number of secondaries for every impact
+        # Since this is a macro-particle code, where every MP stands for many electrons,
+        # this step is omitted.
+
+        # (5): Delete if n = 0
+        # Done automatically by the MP system.
+
+        # (6): Generate energy:
 
 
-        # Binomial p
-
-        #self.dummy(delta_e, delta_r, delta_ts)
 
         # return delta, ref_frac
-        return delta_e, delta_r, delta_ts, delta, locals()
+        return delta
 
 
     def _delta_e(self, E_impact_eV, costheta_impact):
         """
         Backscattered electrons (elastically scattered).
-        (25) in FP paper
+        (25) in FP paper.
         """
 
         exp_factor = -(np.abs(E_impact_eV - self.eEHat)/self.w)**self.p / self.p
@@ -62,8 +63,8 @@ class SEY_model_Furman_Pivi(object):
 
     def _delta_r(self, E_impact_eV, costheta_impact):
         """
-        Rediffused electrons (not in ECLOUD model)
-        (28) in FP paper
+        Rediffused electrons (not in ECLOUD model).
+        (28) in FP paper.
         """
 
         exp_factor = -(E_impact_eV/self.eR)**self.r
@@ -74,8 +75,8 @@ class SEY_model_Furman_Pivi(object):
 
     def _delta_ts(self, E_impact_eV, costheta_impact):
         """
-        True secondaries
-        (31) in FP paper
+        True secondaries.
+        (31) in FP paper.
         """
 
         eHat = self.eHat0 * (1. + self.t3*(1. - np.cos(costheta_impact)**self.t4))
