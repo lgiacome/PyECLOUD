@@ -27,12 +27,12 @@ class SEY_model_Furman_Pivi(object):
 
         # Decide on type
         rand = random.rand(E_impact_eV.size)
-        mask_r = rand < delta_r
-        mask_e = np.logical_and(~mask_r, rand < delta_r+delta_e)
-        mask_ts = np.logical_and(~mask_r, ~mask_e)
+        flag_rediffused = rand < delta_r
+        flag_backscattered = np.logical_and(~flag_rediffused, rand < delta_r+delta_e)
+        flag_truesec = np.logical_and(~flag_rediffused, ~flag_backscattered)
 
         delta = np.ones_like(E_impact_eV, dtype=float)
-        delta[mask_ts] = delta_ts[mask_ts] / (1-delta_r[mask_ts]-delta_e[mask_ts])
+        delta[flag_truesec] = delta_ts[flag_truesec] / (1-delta_r[flag_truesec]-delta_e[flag_truesec])
 
         # (4): Generate number of secondaries for every impact
         # Since this is a macro-particle code, where every MP stands for many electrons,
@@ -42,11 +42,11 @@ class SEY_model_Furman_Pivi(object):
         # Done automatically by the MP system.
 
         # (6): Generate energy:
+        # In impact_management_system
 
+        nel_emit = delta*nel_impact
 
-
-        # return delta, ref_frac
-        return delta
+        return nel_emit, flag_backscattered, flag_rediffused, flag_truesec
 
 
     def _delta_e(self, E_impact_eV, costheta_impact):
