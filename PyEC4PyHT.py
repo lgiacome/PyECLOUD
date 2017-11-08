@@ -302,6 +302,18 @@ class Ecloud(object):
         MP_p.nel_mp = beam.x[ix]*0.+beam.particlenumber_per_mp/dz#they have to become cylinders
         MP_p.N_mp = len(beam.x[ix])
         MP_p.charge = beam.charge
+
+        if self.gas_ion_flag == 1:
+            mean_x = np.mean(beam.x[ix])
+            mean_y = np.mean(beam.y[ix])
+            sigma_x = np.std(beam.x[ix])
+            sigma_y = np.std(beam.y[ix])
+
+            lambda_slice = MP_p.N_mp * beam.particlenumber_per_mp / dz
+            MP_e = self.resgasion.generate(MP_e=MP_e, lambda_t=lambda_slice, Dt=dt, sigmax=sigma_x,
+                                                sigmay=sigma_y, x_beam_pos=mean_x, y_beam_pos=mean_y)
+
+
         #compute beam field (it assumes electrons!)
         spacech_ele.recompute_spchg_efield(MP_p)
         #scatter to electrons
