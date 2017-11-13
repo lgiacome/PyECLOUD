@@ -70,8 +70,9 @@ class Ecloud_fastion(Ecloud):
 
 
         super(Ecloud_fastion, self).__init__(L_ecloud, slicer, Dt_ref, pyecl_input_folder = pyecl_input_folder,
-                                                flag_clean_slices = flag_clean_slices, slice_by_slice_mode = slice_by_slice_mode,
-                                                space_charge_obj = space_charge_obj, **kwargs)
+                                             flag_clean_slices = flag_clean_slices, 
+                                             slice_by_slice_mode = slice_by_slice_mode,
+                                             space_charge_obj = space_charge_obj, **kwargs)
 
         self.beam_monitor = beam_monitor
         self.include_cloud_sc = include_cloud_sc
@@ -211,12 +212,6 @@ class Ecloud_fastion(Ecloud):
         Ex_sc_p, Ey_sc_p = MP_e_state.gather(MP_p.x_mp[0:MP_p.N_mp],MP_p.y_mp[0:MP_p.N_mp])
         Ex_n_beam, Ey_n_beam = MP_p_state.gather(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp])
 
-        # kick beam particles
-        fact_kick = beam.charge / (beam.mass * beam.beta * beam.beta * beam.gamma * c * c) * self.L_ecloud
-        beam.xp[ix] += fact_kick * Ex_sc_p
-        beam.yp[ix] += fact_kick * Ey_sc_p
-
-
         # cloud particles
         Ex_n = MP_e.vx_mp[:MP_e.N_mp] * 0.
         Ey_n = Ex_n * 0.
@@ -243,6 +238,10 @@ class Ecloud_fastion(Ecloud):
         # impacts: backtracking and secondary emission
         MP_e = impact_man.backtrack_and_second_emiss(old_pos, MP_e)
 
+        # kick beam particles
+        fact_kick = beam.charge / (beam.mass * beam.beta * beam.beta * beam.gamma * c * c) * self.L_ecloud
+        beam.xp[ix] += fact_kick * Ex_sc_p
+        beam.yp[ix] += fact_kick * Ey_sc_p
 
         if self.save_ele_distributions_last_track:
             self.rho_ele_last_track.append(spacech_ele.rho.copy())

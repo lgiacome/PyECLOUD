@@ -316,9 +316,9 @@ class Ecloud(object):
 
         #compute beam field (it assumes electrons!)
         spacech_ele.recompute_spchg_efield(MP_p)
+
         #scatter to electrons
         Ex_n_beam, Ey_n_beam = spacech_ele.get_sc_eletric_field(MP_e)
-
 
         ## compute electron field map
         spacech_ele.recompute_spchg_efield(MP_e)
