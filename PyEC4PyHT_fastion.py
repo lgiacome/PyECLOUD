@@ -54,7 +54,6 @@ import numpy as np
 from scipy.constants import c, e
 import time
 from PyEC4PyHT import Ecloud
-from gas_ionization_class import residual_gas_ionization
 
 
 class MP_light(object):
@@ -66,7 +65,8 @@ class Ecloud_fastion(Ecloud):
 
     def __init__(self, L_ecloud, slicer, Dt_ref, pyecl_input_folder = './',
                 flag_clean_slices = False, slice_by_slice_mode = False, space_charge_obj = None,
-                beam_monitor = None, include_cloud_sc = False, ionize_only_first_bunch = False, **kwargs):
+                beam_monitor = None, include_cloud_sc = False, ionize_only_first_bunch = False, 
+                single_kick_mode = True, **kwargs):
 
 
         super(Ecloud_fastion, self).__init__(L_ecloud, slicer, Dt_ref, pyecl_input_folder = pyecl_input_folder,
@@ -76,6 +76,8 @@ class Ecloud_fastion(Ecloud):
         self.beam_monitor = beam_monitor
         self.include_cloud_sc = include_cloud_sc
         self.ionize_only_first_bunch = ionize_only_first_bunch
+        self.single_kick_mode = single_kick_mode
+
 
         self.MP_e_field_state = self.spacech_ele.PyPICobj.get_state_object()
         self.MP_p_field_state = self.spacech_ele.PyPICobj.get_state_object()
@@ -104,9 +106,6 @@ class Ecloud_fastion(Ecloud):
 
         slices = beam.get_slices(self.slicer)
         self.slicer.add_statistics(sliceset=slices, beam=beam, statistics=True)
-
-        # Only track over slices with particles
-        filled_slices = np.where(slices.n_macroparticles_per_slice > 0)[0]
 
         for i in xrange(slices.n_slices-1, -1, -1):
 
@@ -139,7 +138,7 @@ class Ecloud_fastion(Ecloud):
             raise ValueError(
                     'track cannot clean the slices in slice-by-slice mode! ')
 
-        if beam.slice_info is not 'unsliced': # and beam.macroparticlenumber > 0:
+        if beam.slice_info is not 'unsliced':
             dz = beam.slice_info['z_bin_right']-beam.slice_info['z_bin_left']
             self._track_single_slice(beam, ix=np.arange(beam.macroparticlenumber), dz=dz)
 
@@ -153,7 +152,8 @@ class Ecloud_fastion(Ecloud):
                 self.pyecl_input_folder, flag_clean_slices = self.flag_clean_slices,
                 slice_by_slice_mode = self.slice_by_slice_mode, space_charge_obj = self.spacech_ele,
                 beam_monitor = self.beam_monitor, include_cloud_sc = self.include_cloud_sc,
-                ionize_only_first_bunch = self.ionize_only_first_bunch, **self.kwargs)
+                ionize_only_first_bunch = self.ionize_only_first_bunch, 
+                single_kick_mode = self.single_kick_mode, **self.kwargs)
 
 
     #@profile
@@ -185,12 +185,12 @@ class Ecloud_fastion(Ecloud):
         MP_p.N_mp = len(beam.x[ix])
         MP_p.charge = beam.charge
 
-        mean_x = np.mean(beam.x[ix])
-        mean_y = np.mean(beam.y[ix])
-        sigma_x = np.std(beam.x[ix])
-        sigma_y = np.std(beam.y[ix])
-
         if self.gas_ion_flag == 1:
+            mean_x = np.mean(beam.x[ix])
+            mean_y = np.mean(beam.y[ix])
+            sigma_x = np.std(beam.x[ix])
+            sigma_y = np.std(beam.y[ix])
+
             Np_bunch = MP_p.N_mp * beam.particlenumber_per_mp
             dz_bunch = dz
             lambda_bunch = Np_bunch
@@ -211,24 +211,28 @@ class Ecloud_fastion(Ecloud):
         Ex_sc_p, Ey_sc_p = MP_e_state.gather(MP_p.x_mp[0:MP_p.N_mp],MP_p.y_mp[0:MP_p.N_mp])
         Ex_n_beam, Ey_n_beam = MP_p_state.gather(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp])
 
-        # kick cloud particles
-        MP_e.vx_mp[:MP_e.N_mp] += Ex_n_beam * MP_e.charge / MP_e.mass / c
-        MP_e.vy_mp[:MP_e.N_mp] += Ey_n_beam * MP_e.charge / MP_e.mass / c
-            
         # kick beam particles
         fact_kick = beam.charge / (beam.mass * beam.beta * beam.beta * beam.gamma * c * c) * self.L_ecloud
         beam.xp[ix] += fact_kick * Ex_sc_p
         beam.yp[ix] += fact_kick * Ey_sc_p
 
 
-        # Total electric field on electrons
+        # cloud particles
+        Ex_n = MP_e.vx_mp[:MP_e.N_mp] * 0.
+        Ey_n = Ex_n * 0.
+
         if self.include_cloud_sc:
             Ex_sc_n, Ey_sc_n = MP_e_state.gather(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp])
-            Ex_n = Ex_sc_n
-            Ey_n = Ey_sc_n
+            Ex_n += Ex_sc_n
+            Ey_n += Ey_sc_n
+
+        if self.single_kick_mode:
+            # kick cloud particles
+            MP_e.vx_mp[:MP_e.N_mp] += Ex_n_beam * MP_e.charge / MP_e.mass / c
+            MP_e.vy_mp[:MP_e.N_mp] += Ey_n_beam * MP_e.charge / MP_e.mass / c
         else:
-            Ex_n = MP_e.vx_mp[:MP_e.N_mp] * 0.
-            Ey_n = Ex_n
+            Ex_n += Ex_n_beam
+            Ey_n += Ey_n_beam
 
         # save position before motion step
         old_pos = MP_e.get_positions()
