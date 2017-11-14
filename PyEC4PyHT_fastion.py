@@ -80,8 +80,12 @@ class Ecloud_fastion(Ecloud):
         self.single_kick_mode = single_kick_mode
 
 
-        self.MP_e_field_state = self.spacech_ele.PyPICobj.get_state_object()
-        self.MP_p_field_state = self.spacech_ele.PyPICobj.get_state_object()
+        import PyPIC
+        #if PyPICmode == 'FFT_OpenBoundary'
+        if isinstance(self.spacech_ele.PyPICobj, PyPIC.FFT_OpenBoundary.FFT_OpenBoundary):
+            self.flag_PIC_is_FFT = True
+            self.MP_e_field_state = self.spacech_ele.PyPICobj.get_state_object()
+            self.MP_p_field_state = self.spacech_ele.PyPICobj.get_state_object()
 
         self.gas_ionization = self.resgasion
 
@@ -201,25 +205,48 @@ class Ecloud_fastion(Ecloud):
             if self.ionize_only_first_bunch:
                 self.gas_ion_flag = 0
 
-        # scatter fields
-        MP_e_state.scatter(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],MP_e.nel_mp[0:MP_e.N_mp], charge = MP_e.charge)
-        MP_p_state.scatter(MP_p.x_mp[0:MP_p.N_mp],MP_p.y_mp[0:MP_p.N_mp],MP_p.nel_mp[0:MP_p.N_mp], charge = MP_p.charge)
+        # PIC loop
+        if self.flag_PIC_is_FFT:
+            # scatter fields
+            MP_e_state.scatter(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],MP_e.nel_mp[0:MP_e.N_mp], charge = MP_e.charge)
+            MP_p_state.scatter(MP_p.x_mp[0:MP_p.N_mp],MP_p.y_mp[0:MP_p.N_mp],MP_p.nel_mp[0:MP_p.N_mp], charge = MP_p.charge)
 
-        # solve fields
-        spacech_ele.PyPICobj.solve_states([MP_e_state, MP_p_state])
+            # solve fields
+            spacech_ele.PyPICobj.solve_states([MP_e_state, MP_p_state])
 
-        # gather fields
-        Ex_sc_p, Ey_sc_p = MP_e_state.gather(MP_p.x_mp[0:MP_p.N_mp],MP_p.y_mp[0:MP_p.N_mp])
-        Ex_n_beam, Ey_n_beam = MP_p_state.gather(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp])
+            # gather fields
+            Ex_sc_p, Ey_sc_p = MP_e_state.gather(MP_p.x_mp[0:MP_p.N_mp],MP_p.y_mp[0:MP_p.N_mp])
+            Ex_n_beam, Ey_n_beam = MP_p_state.gather(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp])
 
-        # cloud particles
-        Ex_n = MP_e.vx_mp[:MP_e.N_mp] * 0.
-        Ey_n = Ex_n * 0.
+            if self.include_cloud_sc:
+                Ex_sc_n, Ey_sc_n = MP_e_state.gather(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp])
+            else:
+                Ex_sc_n = MP_e.vx_mp[:MP_e.N_mp] * 0.
+                Ey_sc_n = Ex_sc_n * 0.
 
-        if self.include_cloud_sc:
-            Ex_sc_n, Ey_sc_n = MP_e_state.gather(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp])
-            Ex_n += Ex_sc_n
-            Ey_n += Ey_sc_n
+        else:
+            #compute beam field (it assumes electrons!)
+            spacech_ele.recompute_spchg_efield(MP_p)
+
+            #scatter to electrons
+            Ex_n_beam, Ey_n_beam = spacech_ele.get_sc_eletric_field(MP_e)
+
+            ## compute electron field map
+            spacech_ele.recompute_spchg_efield(MP_e)
+
+            ## compute electron field on beam particles
+            Ex_sc_p, Ey_sc_p = spacech_ele.get_sc_eletric_field(MP_p)
+
+            ## compute electron field on electrons
+            if self.include_cloud_sc:
+                Ex_sc_n, Ey_sc_n = spacech_ele.get_sc_eletric_field(MP_e)
+            else:
+                Ex_sc_n = MP_e.vx_mp[:MP_e.N_mp] * 0.
+                Ey_sc_n = Ex_sc_n * 0.
+
+        # Total electric field on electrons
+        Ex_n = Ex_sc_n
+        Ey_n = Ey_sc_n
 
         if self.single_kick_mode:
             # kick cloud particles
