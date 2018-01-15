@@ -80,6 +80,7 @@ class Ecloud_fastion(Ecloud):
         self.single_kick_mode = single_kick_mode
 
 
+        self.flag_PIC_is_FFT = False
         import PyPIC
         #if PyPICmode == 'FFT_OpenBoundary'
         if isinstance(self.spacech_ele.PyPICobj, PyPIC.FFT_OpenBoundary.FFT_OpenBoundary):
@@ -208,8 +209,10 @@ class Ecloud_fastion(Ecloud):
         # PIC loop
         if self.flag_PIC_is_FFT:
             # scatter fields
-            MP_e_state.scatter(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],MP_e.nel_mp[0:MP_e.N_mp], charge = MP_e.charge)
-            MP_p_state.scatter(MP_p.x_mp[0:MP_p.N_mp],MP_p.y_mp[0:MP_p.N_mp],MP_p.nel_mp[0:MP_p.N_mp], charge = MP_p.charge)
+            MP_e_state.scatter(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],MP_e.nel_mp[0:MP_e.N_mp], 
+                               charge = MP_e.charge)
+            MP_p_state.scatter(MP_p.x_mp[0:MP_p.N_mp],MP_p.y_mp[0:MP_p.N_mp],MP_p.nel_mp[0:MP_p.N_mp], 
+                               charge = MP_p.charge)
 
             # solve fields
             spacech_ele.PyPICobj.solve_states([MP_e_state, MP_p_state])
