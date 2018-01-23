@@ -6,6 +6,8 @@ import sys
 sys.path.append("../../../")
 sys.path.append("../../../PyHEADTAIL")
 from PyHEADTAIL.particles.slicing import UniformBinSlicer
+import numpy as np
+np.random.seed(53287)
 
 print 'Start initialization'
 t_start = time.mktime(time.localtime())
