@@ -82,7 +82,6 @@ class Ecloud_fastion(Ecloud):
 
         self.flag_PIC_is_FFT = False
         import PyPIC
-        #if PyPICmode == 'FFT_OpenBoundary'
         if isinstance(self.spacech_ele.PyPICobj, PyPIC.FFT_OpenBoundary.FFT_OpenBoundary):
             self.flag_PIC_is_FFT = True
             self.MP_e_field_state = self.spacech_ele.PyPICobj.get_state_object()
@@ -111,7 +110,6 @@ class Ecloud_fastion(Ecloud):
             beam.clean_slices()
 
         slices = beam.get_slices(self.slicer)
-        self.slicer.add_statistics(sliceset=slices, beam=beam, statistics=True)
 
         for i in xrange(slices.n_slices-1, -1, -1):
 
@@ -169,8 +167,6 @@ class Ecloud_fastion(Ecloud):
         dynamics = self.dynamics
         impact_man = self.impact_man
         spacech_ele = self.spacech_ele
-        MP_e_state = self.MP_e_field_state
-        MP_p_state = self.MP_p_field_state
         
         dt = dz / (beam.beta * c)
         
@@ -187,7 +183,10 @@ class Ecloud_fastion(Ecloud):
         MP_p = MP_light()
         MP_p.x_mp = beam.x[ix]
         MP_p.y_mp = beam.y[ix]
-        MP_p.nel_mp = beam.x[ix] * 0. + beam.particlenumber_per_mp
+        if self.single_kick_mode:
+            MP_p.nel_mp = beam.x[ix] * 0. + beam.particlenumber_per_mp
+        else:
+            MP_p.nel_mp = beam.x[ix] * 0. + beam.particlenumber_per_mp / dz
         MP_p.N_mp = len(beam.x[ix])
         MP_p.charge = beam.charge
 
@@ -197,17 +196,18 @@ class Ecloud_fastion(Ecloud):
             sigma_x = np.std(beam.x[ix])
             sigma_y = np.std(beam.y[ix])
 
-            Np_bunch = MP_p.N_mp * beam.particlenumber_per_mp
-            dz_bunch = dz
-            lambda_bunch = Np_bunch
-            dt_bunch = 1 / c
-            MP_e = self.gas_ionization.generate(MP_e=MP_e, lambda_t=lambda_bunch, Dt=dt_bunch, sigmax=sigma_x,
+            lambda_bunch = MP_p.N_mp * beam.particlenumber_per_mp / dz
+            MP_e = self.gas_ionization.generate(MP_e=MP_e, lambda_t=lambda_bunch, Dt=dt, sigmax=sigma_x,
                                                 sigmay=sigma_y, x_beam_pos=mean_x, y_beam_pos=mean_y)
             if self.ionize_only_first_bunch:
                 self.gas_ion_flag = 0
 
         # PIC loop
         if self.flag_PIC_is_FFT:
+
+            MP_e_state = self.MP_e_field_state
+            MP_p_state = self.MP_p_field_state
+
             # scatter fields
             MP_e_state.scatter(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],MP_e.nel_mp[0:MP_e.N_mp], 
                                charge = MP_e.charge)
