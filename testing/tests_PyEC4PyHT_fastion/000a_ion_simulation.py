@@ -48,7 +48,7 @@ n_segments = 260
 n_turns = 1
 
 if optics_mode == 'smooth':
-	machine = CLIC_DR(machine_configuration=machine_configuration, n_segments=n_segments)
+    machine = CLIC_DR(machine_configuration=machine_configuration, n_segments=n_segments)
 
 elif optics_mode == 'non-smooth':
     with open('CLIC_DR_n260_optics.pkl') as fid:
@@ -60,11 +60,11 @@ elif optics_mode == 'non-smooth':
 # define bunch
 epsn_y = 0.0048e-6
 if machine_configuration =='CLIC_DR_1GHz':
-	sigma_z = 1.8e-3
-	epsn_x = 0.456e-6
+    sigma_z = 1.8e-3
+    epsn_x = 0.456e-6
 elif machine_configuration =='CLIC_DR_2GHz':
-	sigma_z = 1.6e-3
-	epsn_x = 0.472e-6
+    sigma_z = 1.6e-3
+    epsn_x = 0.472e-6
 
 intensity = 4.1e9
 # number of macroparticles per bunch
@@ -77,14 +77,14 @@ print 'Initializing', n_bunches, 'bunches, of', n_macroparticles, 'macroparticle
 
 bunches = []
 for i_bun in xrange(n_bunches):
-	print 'Bunch', i_bun
-	bunch = machine.generate_6D_Gaussian_bunch(n_macroparticles=n_macroparticles, intensity=intensity, 
+    print 'Bunch', i_bun
+    bunch = machine.generate_6D_Gaussian_bunch(n_macroparticles=n_macroparticles, intensity=intensity, 
                                                    epsn_x=epsn_x, epsn_y=epsn_y, sigma_z=sigma_z)
-	bunch.z -= machine.circumference/machine.longitudinal_map.harmonics[0]*i_bun
-	
-	print 'Bunch centroid at', bunch.mean_x(), bunch.mean_y(), bunch.mean_z()
-	bunches.append(bunch)
-	
+    bunch.z -= machine.circumference/machine.longitudinal_map.harmonics[0]*i_bun
+    
+    print 'Bunch centroid at', bunch.mean_x(), bunch.mean_y(), bunch.mean_z()
+    bunches.append(bunch)
+    
 beam = sum(bunches)
 
 
@@ -104,42 +104,45 @@ Dh_y = y_aper/125.
 Dh_sc = [Dh_x, Dh_y]
 
 
-# find filled slices and make filled buncher
-slices = beam.get_slices(machine.buncher)
-machine.buncher.add_statistics(sliceset=slices, beam=beam, statistics=True)
+# find bunch slots and make bunch spacing wide slicer
+bunch_slots = beam.get_slices(machine.buncher)
+machine.buncher.add_statistics(sliceset=bunch_slots, beam=beam, statistics=True)
 
-mask_filled = slices.n_macroparticles_per_slice > 0
-n_filled = np.sum(mask_filled)
-z_cuts_filled = (np.min(slices.z_bins[mask_filled]), np.max(slices.z_bins[np.append(mask_filled, True)]))
+mask_filled_slots = bunch_slots.n_macroparticles_per_slice > 0
+n_filled_slots = np.sum(mask_filled_slots)
+z_cuts_filled_slots = (np.min(bunch_slots.z_bins[mask_filled_slots]), 
+                       np.max(bunch_slots.z_bins[np.append(mask_filled_slots, True)]))
 
-filled_buncher = UniformBinSlicer(n_filled, z_cuts=z_cuts_filled)
-filled_slices = beam.get_slices(filled_buncher)
-filled_buncher.add_statistics(sliceset=filled_slices, beam=beam, statistics=True)
+bunch_slicer = UniformBinSlicer(n_filled_slots, z_cuts=z_cuts_filled_slots)
+bunch_slices = beam.get_slices(bunch_slicer)
+bunch_slicer.add_statistics(sliceset=bunch_slices, beam=beam, statistics=True)
 
 
 # define a beam monitor 
 from PyHEADTAIL.monitors.monitors import SliceMonitor
 beam_monitor = SliceMonitor(filename='bunch_evolution_A%d_%db_%dips_%dturns_%.2fnTorr'%(A, n_bunches, n_segments, n_turns, P_nTorr), 
-				n_steps = n_turns*n_segments, slicer=filled_buncher, write_buffer_every=100)
+                            n_steps = n_turns*n_segments, slicer=bunch_slicer, write_buffer_every=100)
 
 
 # initialize ion cloud with single kick per bunch
-import PyECLOUD.PyEC4PyHT_fastion as PyEC4PyHTfi
-ecloud_sk = PyEC4PyHTfi.Ecloud_fastion(L_ecloud=machine.circumference/n_segments, slicer=machine.buncher, 
-			Dt_ref=Dt_ref, MP_e_mass=ion_mass, MP_e_charge=ion_charge,
-			pyecl_input_folder='./pyecloud_config', beam_monitor=beam_monitor, 
-			chamb_type = chamb_type, PyPICmode = 'FFT_OpenBoundary',
-			x_aper=x_aper, y_aper=y_aper,
-			filename_chm=filename_chm, Dh_sc=Dh_sc,
-			init_unif_edens_flag=init_unif_edens_flag,
-			init_unif_edens=init_unif_edens, 
-			gas_ion_flag=gas_ion_flag, unif_frac=unif_frac, 
-			P_nTorr=P_nTorr, sigma_ion_MBarn=sigma_ion_MBarn, 
-			Temp_K=Temp_K, E_init_ion=E_init_ion,
-			N_mp_max=N_mp_max,
-			nel_mp_ref_0=nel_mp_ref_0,
-			B_multip=B_multip_per_eV*machine.p0/e*c,
-			switch_model='perfect_absorber')
+import PyECLOUD.PyEC4PyHT as PyEC4PyHT
+ecloud_sk = PyEC4PyHT.Ecloud(L_ecloud=machine.circumference/n_segments, slicer=bunch_slicer, 
+            Dt_ref=Dt_ref, pyecl_input_folder='./pyecloud_config', beam_monitor=beam_monitor, 
+            chamb_type = chamb_type, PyPICmode = 'FFT_OpenBoundary',
+            x_aper=x_aper, y_aper=y_aper,
+            filename_chm=filename_chm, Dh_sc=Dh_sc,
+            init_unif_edens_flag=init_unif_edens_flag,
+            init_unif_edens=init_unif_edens, 
+            cloud_mass=ion_mass, cloud_charge=ion_charge,
+            gas_ion_flag=gas_ion_flag, unif_frac=unif_frac, 
+            P_nTorr=P_nTorr, sigma_ion_MBarn=sigma_ion_MBarn, 
+            Temp_K=Temp_K, E_init_ion=E_init_ion,
+            N_mp_max=N_mp_max,
+            nel_mp_ref_0=nel_mp_ref_0,
+            B_multip=B_multip_per_eV*machine.p0/e*c,
+            switch_model='perfect_absorber',
+            kick_mode_for_beam_field=True, 
+            verbose=True)
 
 
 # print grid size
@@ -156,7 +159,7 @@ print 'Start track...'
 t_start_sw = time.mktime(time.localtime())
 print 'Time for initialization ',(t_start_sw-t_start), 's'
 for i_turn in xrange(n_turns):
-	print 'Turn %d'%(i_turn+1)
-	machine.track(beam)
+    print 'Turn %d'%(i_turn+1)
+    machine.track(beam)
 t_stop_sw = time.mktime(time.localtime())
 print 'Done track in ', (t_stop_sw-t_start_sw), 's'

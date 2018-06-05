@@ -1,4 +1,4 @@
-#----------------------------------------------------------------------
+#-Begin-preamble-------------------------------------------------------
 #
 #                           CERN
 #
@@ -7,23 +7,21 @@
 #
 #     This file is part of the code:
 #
-#                  PyECLOUD Version 6.6.0
+#                   PyECLOUD Version 7.2.0
 #
 #
-#     Author and contact:   Giovanni IADAROLA
+#     Main author:          Giovanni IADAROLA
 #                           BE-ABP Group
 #                           CERN
 #                           CH-1211 GENEVA 23
 #                           SWITZERLAND
 #                           giovanni.iadarola@cern.ch
 #
-#                contact:   Giovanni RUMOLO
-#                           BE-ABP Group
-#                           CERN
-#                           CH-1211 GENEVA 23
-#                           SWITZERLAND
-#                           giovanni.rumolo@cern.ch
-#
+#     Contributors:         Eleonora Belli
+#                           Philipp Dijkstal
+#                           Lotta Mether
+#                           Annalisa Romano
+#                           Giovanni Rumolo
 #
 #
 #     Copyright  CERN,  Geneva  2011  -  Copyright  and  any   other
@@ -47,13 +45,14 @@
 #
 #     The material cannot be sold. CERN should be  given  credit  in
 #     all references.
-#----------------------------------------------------------------------
+#
+#-End-preamble---------------------------------------------------------
 
 import numpy as np
-import sec_emission
+import electron_emission
 import hist_for as histf
 import seg_impact as segi
-
+from scipy.constants import e as qe
 
 class impact_management(object):
     def __init__(self, switch_no_increase_energy, chamb, sey_mod, E_th, sigmafit, mufit,
@@ -116,7 +115,7 @@ class impact_management(object):
             self.nel_hist_impact_seg=np.zeros(chamb.N_vert,float)
             self.energ_eV_impact_seg =np.zeros(chamb.N_vert,float)
 
-        self.angle_dist_func = sec_emission.get_angle_dist_func(secondary_angle_distribution)
+        self.angle_dist_func = electron_emission.get_angle_dist_func(secondary_angle_distribution)
 
         print 'Done impact man. init.'
 
@@ -179,10 +178,6 @@ class impact_management(object):
             scrub_en_th = self.scrub_en_th
             thresh_low_energy = self.thresh_low_energy
 
-            me = MP_e.mass
-            qe = np.abs(MP_e.charge)
-            qm = qe/me
-
             ## impact management
 
             flag_impact = np.zeros_like(x_mp, dtype=bool)
@@ -221,7 +216,7 @@ class impact_management(object):
 
                 # compute impact velocities, energy and angle
                 v_impact_mod=np.sqrt(vx_impact*vx_impact+vy_impact*vy_impact+vz_impact*vz_impact)
-                E_impact_eV=0.5/qm*v_impact_mod*v_impact_mod
+                E_impact_eV=0.5*MP_e.mass/qe*v_impact_mod*v_impact_mod
                 v_impact_n=vx_impact*Norm_x+vy_impact*Norm_y
                 # Use np.abs to rule out negative values, which can happen in very seldom fringe cases.
                 # Mathematically correct would be -(v_impact_n)/v_impact_mod
@@ -274,10 +269,10 @@ class impact_management(object):
                     N_mp_new = N_mp_old + n_add_total
 
                     # replace impacted MPs that are not reflected
-                    En_truesec_eV = sec_emission.hilleret_model2(
+                    En_truesec_eV = electron_emission.sec_energy_hilleret_model2(
                         switch_no_increase_energy, N_true_sec, sigmafit, mufit, E_th, E_impact_eV[flag_truesec], thresh_low_energy)
                     vx_emit[flag_truesec], vy_emit[flag_truesec], vz_emit[flag_truesec] = self.angle_dist_func(
-                        N_true_sec, En_truesec_eV, Norm_x[flag_truesec], Norm_y[flag_truesec])
+                        N_true_sec, En_truesec_eV, Norm_x[flag_truesec], Norm_y[flag_truesec], MP_e.mass)
 
                     # Add new MPs
                     if n_add_total != 0:
@@ -291,10 +286,10 @@ class impact_management(object):
                         E_impact_eV_add = np.repeat(E_impact_eV, n_add)
 
                         # Generate new MP properties, angles and energies
-                        En_truesec_eV_add = sec_emission.hilleret_model2(
+                        En_truesec_eV_add = electron_emission.sec_energy_hilleret_model2(
                             switch_no_increase_energy, n_add_total, sigmafit, mufit, E_th, E_impact_eV_add, thresh_low_energy)
                         vx_mp_add, vy_mp_add, vz_mp_add = self.angle_dist_func(
-                            n_add_total, En_truesec_eV_add, norm_x_add, norm_y_add)
+                            n_add_total, En_truesec_eV_add, norm_x_add, norm_y_add, MP_e.mass)
 
                         MP_e.add_new_MPs(n_add_total, nel_mp_add, x_mp_add, y_mp_add, z_mp_add,
                                          vx_mp_add, vy_mp_add, vz_mp_add)
@@ -313,7 +308,7 @@ class impact_management(object):
 
                 #subtract replaced macroparticles
                 v_emit_mod = np.sqrt(vx_emit**2+vy_emit**2+vz_emit**2)
-                E_emit_eV=0.5/qm*v_emit_mod*v_emit_mod
+                E_emit_eV=0.5*MP_e.mass/qe*v_emit_mod*v_emit_mod
                 histf.compute_hist(x_emit,-nel_emit*E_emit_eV,bias_x_hist,Dx_hist,self.energ_eV_impact_hist)
 
                 if flag_seg:
@@ -332,4 +327,27 @@ class impact_management(object):
                     self.En_emit_last_step_eV += np.sum(En_truesec_eV_add*nel_mp_add)
 
         return MP_e
+    
+    def extract_sey_curves(self,n_rep, E_impact_eV_test, cos_theta_test):
+    
+        sey_mod = self.sey_mod
+        
+        nel_impact = 1. + 0.*E_impact_eV_test
+
+
+        del_true_mat = np.zeros((len(cos_theta_test), len(E_impact_eV_test)))
+        del_elast_mat = np.zeros((len(cos_theta_test), len(E_impact_eV_test)))
+        print('Extracting SEY curves...')
+        for i_ct, ct in enumerate(cos_theta_test):
+            print('%d/%d'%(i_ct+1, len(cos_theta_test))) 
+            for i_ene, Ene in enumerate(E_impact_eV_test):
+                
+                nel_emit, flag_elast, flag_truesec = sey_mod.SEY_process(nel_impact=np.ones(n_rep), 
+                                E_impact_eV=Ene*np.ones(n_rep), costheta_impact=np.ones(n_rep)*ct, i_impact=np.array(n_rep*[0]))
+                                
+                del_true_mat[i_ct, i_ene] = np.mean(nel_emit)*float(np.sum(flag_truesec))/float(n_rep)
+                del_elast_mat[i_ct, i_ene] = np.mean(nel_emit)*float(np.sum(flag_elast))/float(n_rep)
+        print('Done extracting SEY curves.')       
+        
+        return del_true_mat, del_elast_mat
 

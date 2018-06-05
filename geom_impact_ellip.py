@@ -1,4 +1,4 @@
-#----------------------------------------------------------------------
+#-Begin-preamble-------------------------------------------------------
 #
 #                           CERN
 #
@@ -7,23 +7,21 @@
 #
 #     This file is part of the code:
 #
-#                   PyECLOUD Version 6.6.0
+#                   PyECLOUD Version 7.2.0
 #
 #
-#     Author and contact:   Giovanni IADAROLA
+#     Main author:          Giovanni IADAROLA
 #                           BE-ABP Group
 #                           CERN
 #                           CH-1211 GENEVA 23
 #                           SWITZERLAND
 #                           giovanni.iadarola@cern.ch
 #
-#                contact:   Giovanni RUMOLO
-#                           BE-ABP Group
-#                           CERN
-#                           CH-1211 GENEVA 23
-#                           SWITZERLAND
-#                           giovanni.rumolo@cern.ch
-#
+#     Contributors:         Eleonora Belli
+#                           Philipp Dijkstal
+#                           Lotta Mether
+#                           Annalisa Romano
+#                           Giovanni Rumolo
 #
 #
 #     Copyright  CERN,  Geneva  2011  -  Copyright  and  any   other
@@ -47,16 +45,24 @@
 #
 #     The material cannot be sold. CERN should be  given  credit  in
 #     all references.
-#----------------------------------------------------------------------
+#
+#-End-preamble---------------------------------------------------------
 
 
 
-from numpy import sum, sqrt, arctan2, sin, cos, isnan
+from numpy import sum, sqrt, arctan2, sin, cos, isnan, pi
 
 class ellip_cham_geom_object:
     def __init__(self, x_aper, y_aper, flag_verbose_file=True):
+        
+        print('Elliptic chamber')
+        
         self.x_aper = x_aper
         self.y_aper = y_aper
+        
+        self.area = pi*self.x_aper*self.y_aper
+        
+        print("The area of the chamber is %.3e m^2"%self.area)
 
         self.N_mp_impact=0
         self.N_mp_corrected=0
@@ -67,6 +73,9 @@ class ellip_cham_geom_object:
 
     def is_outside(self, x_mp, y_mp):
         return (((x_mp/self.x_aper)**2 + (y_mp/self.y_aper)**2)>=1);
+
+    def is_convex(self):
+        return True
 
     def impact_point_and_normal(self, x_in, y_in, z_in, x_out, y_out, z_out, resc_fac=0.99, flag_robust=True):
 

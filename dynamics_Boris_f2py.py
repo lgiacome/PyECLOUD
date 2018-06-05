@@ -1,4 +1,4 @@
-#----------------------------------------------------------------------
+#-Begin-preamble-------------------------------------------------------
 #
 #                           CERN
 #
@@ -7,23 +7,21 @@
 #
 #     This file is part of the code:
 #
-#                   PyECLOUD Version 6.6.0
+#                   PyECLOUD Version 7.2.0
 #
 #
-#     Author and contact:   Giovanni IADAROLA
+#     Main author:          Giovanni IADAROLA
 #                           BE-ABP Group
 #                           CERN
 #                           CH-1211 GENEVA 23
 #                           SWITZERLAND
 #                           giovanni.iadarola@cern.ch
 #
-#                contact:   Giovanni RUMOLO
-#                           BE-ABP Group
-#                           CERN
-#                           CH-1211 GENEVA 23
-#                           SWITZERLAND
-#                           giovanni.rumolo@cern.ch
-#
+#     Contributors:         Eleonora Belli
+#                           Philipp Dijkstal
+#                           Lotta Mether
+#                           Annalisa Romano
+#                           Giovanni Rumolo
 #
 #
 #     Copyright  CERN,  Geneva  2011  -  Copyright  and  any   other
@@ -47,7 +45,8 @@
 #
 #     The material cannot be sold. CERN should be  given  credit  in
 #     all references.
-#----------------------------------------------------------------------
+#
+#-End-preamble---------------------------------------------------------
 
 from numpy import array, cross, sum, squeeze
 import scipy.io as sio
@@ -167,13 +166,16 @@ class pusher_Boris():
             vyn1 = MP_e.vy_mp[0:MP_e.N_mp]
             vzn1 = MP_e.vz_mp[0:MP_e.N_mp]
 
+            mass = MP_e.mass
+            charge = MP_e.charge
+
             if  Ez_n==0.:
                 Ez_n = 0.*xn1
 
             for ii in range(self.N_sub_steps):
                 Bx_n, By_n, Bz_n = self.B_ob.get_B(xn1,yn1)
                 boris_step(self.Dtt,xn1,yn1,zn1,vxn1,vyn1,vzn1,
-                           Ex_n,Ey_n,Ez_n,Bx_n,By_n,Bz_n)
+                           Ex_n,Ey_n,Ez_n,Bx_n,By_n,Bz_n,mass,charge)
 
 
 
@@ -200,13 +202,16 @@ class pusher_Boris():
             vyn1 = MP_e.vy_mp[0:MP_e.N_mp]
             vzn1 = MP_e.vz_mp[0:MP_e.N_mp]
 
+            mass = MP_e.mass
+            charge = MP_e.charge
+
             if  Ez_n==0.:
                 Ez_n = 0.*xn1
 
             for ii in range(N_sub_steps):
                 Bx_n, By_n, Bz_n = self.B_ob.get_B(xn1,yn1)
                 boris_step(Dt_substep,xn1,yn1,zn1,vxn1,vyn1,vzn1,
-                           Ex_n,Ey_n,Ez_n,Bx_n,By_n,Bz_n)
+                           Ex_n,Ey_n,Ez_n,Bx_n,By_n,Bz_n,mass,charge)
 
 
 
