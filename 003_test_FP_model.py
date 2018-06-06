@@ -48,5 +48,13 @@ sp.plot(energies, delta, label='Total')
 
 sp.legend(title='Emitted electrons')
 
+
+sp = plt.subplot(2,2,2)
+sp.grid(True)
+
+sp.hist(test_obj.energy_rediffused([300]*int(1e5)), normed=True)
+ene = np.linspace(0,300)
+sp.plot(ene, (test_obj.q+1)*ene**test_obj.q/300**(test_obj.q+1))
+
 plt.show()
 

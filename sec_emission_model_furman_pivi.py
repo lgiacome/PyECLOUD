@@ -94,7 +94,7 @@ class SEY_model_Furman_Pivi(object):
 
     def energy_rediffused(self, E0):
         randn = random.rand(len(E0))
-        return randn**(self.q+1)*E0
+        return randn**(1/(self.q+1))*E0
 
     def energy_trueSecondary(self, E0):
         u = np.random.rand(len(E0))
