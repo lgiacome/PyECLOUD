@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 import numpy as np
+import scipy.special
 import numpy.random as random
 
 
@@ -91,6 +92,17 @@ class SEY_model_Furman_Pivi(object):
         s = self.s
         return s*x / (s-1+x**s)
 
+    def energy_rediffused(self, E0):
+        randn = random.rand(len(E0))
+        return randn**(self.q+1)*E0
+
+    def energy_trueSecondary(self, E0):
+        u = np.random.rand(len(E0))
+        E_out = self.eHat0
+
+        return E_out
+
+
 
 class SEY_model_FP_Cu(SEY_model_Furman_Pivi):
 
@@ -130,5 +142,4 @@ class SEY_model_FP_Cu(SEY_model_Furman_Pivi):
     # (48b)
     t3          = 0.7
     t4          = 1.
-
 

@@ -49,3 +49,4 @@ sp.plot(energies, delta, label='Total')
 sp.legend(title='Emitted electrons')
 
 plt.show()
+

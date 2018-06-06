@@ -55,16 +55,16 @@ import seg_impact as segi
 from scipy.constants import e as qe
 
 class impact_management(object):
-    def __init__(self, switch_no_increase_energy, chamb, sey_mod, E_th, sigmafit, mufit,
+    def __init__(self, switch_model, switch_no_increase_energy, chamb, sey_mod, E_th, sigmafit, mufit,
                  Dx_hist, scrub_en_th, Nbin_En_hist, En_hist_max, thresh_low_energy=None, flag_seg=False,
-                 cos_angle_width=0.05, flag_cos_angle_hist=True,  secondary_angle_distribution=None):
+                 cos_angle_width=0.05, flag_cos_angle_hist=True, secondary_angle_distribution=None):
 
-        print 'Start impact man. init.'
+        print('Start impact man. init.')
 
-        if flag_seg and chamb.chamb_type!='polyg':
-                raise ValueError("""flag_seg can be True only with chamb_type='polyg'!!!!""")
+        if flag_seg and chamb.chamb_type != 'polyg':
+            raise ValueError("""flag_seg can be True only with chamb_type='polyg'!!!!""")
 
-
+        self.switch_model = switch_model
         self.switch_no_increase_energy = switch_no_increase_energy
         self.chamb = chamb
         self.sey_mod = sey_mod
@@ -78,24 +78,23 @@ class impact_management(object):
         self.En_hist_max = En_hist_max
         self.flag_seg = flag_seg
 
-        xg_hist= np.arange(0,chamb.x_aper+2.*Dx_hist,Dx_hist,float)
-        xgr_hist=xg_hist[1:]
-        xgr_hist=xgr_hist[::-1]#reverse array
-        xg_hist= np.concatenate((-xgr_hist,xg_hist),0)
-        Nxg_hist=len(xg_hist)
-        bias_x_hist=np.min(xg_hist)
+        xg_hist = np.arange(0,chamb.x_aper+2.*Dx_hist,Dx_hist,float)
+        xgr_hist = xg_hist[1::-1] #reverse array
+        xg_hist = np.concatenate((-xgr_hist,xg_hist),0)
+        Nxg_hist = len(xg_hist)
+        bias_x_hist = np.min(xg_hist)
 
-        self.En_g_hist=np.linspace(0.,En_hist_max, Nbin_En_hist) #hist. grid
-        self.DEn_hist=self.En_g_hist[1]-self.En_g_hist[0]     #hist. step
+        self.En_g_hist = np.linspace(0.,En_hist_max, Nbin_En_hist) #hist. grid
+        self.DEn_hist = self.En_g_hist[1]-self.En_g_hist[0]     #hist. step
 
         self.flag_cos_angle_hist = flag_cos_angle_hist
         if flag_cos_angle_hist:
             self.cos_angle_width = cos_angle_width
-            N_angles = int(1./ cos_angle_width)+1
+            N_angles = int(1./cos_angle_width)+1
             self.cos_angle_hist  = np.zeros(N_angles, float)
-            print 'Saving cosine of angle of incident electrons.'
+            print('Saving cosine of angle of incident electrons.')
         else:
-            print 'Not saving cosine of angle of incident electrons.'
+            print('Not saving cosine of angle of incident electrons.')
 
         self.xg_hist = xg_hist
         self.Nxg_hist = Nxg_hist
@@ -240,7 +239,10 @@ class impact_management(object):
                 En_imp_hist[En_imp_hist>En_hist_max]=En_hist_max
                 histf.compute_hist(En_imp_hist,nel_impact,0.,DEn_hist,self.En_hist_line)
 
-                nel_emit, flag_elast, flag_truesec = sey_mod.SEY_process(nel_impact,E_impact_eV, costheta_impact, i_found)
+                if switch_model == 'Furman-Pivi':
+                    pass
+                else:
+                    nel_emit, flag_elast, flag_truesec = sey_mod.SEY_process(nel_impact,E_impact_eV, costheta_impact, i_found)
 
                 self.Nel_impact_last_step=np.sum(nel_impact)
                 self.Nel_emit_last_step=np.sum(nel_emit)
@@ -327,11 +329,11 @@ class impact_management(object):
                     self.En_emit_last_step_eV += np.sum(En_truesec_eV_add*nel_mp_add)
 
         return MP_e
-    
+
     def extract_sey_curves(self,n_rep, E_impact_eV_test, cos_theta_test):
-    
+
         sey_mod = self.sey_mod
-        
+
         nel_impact = 1. + 0.*E_impact_eV_test
 
 
@@ -339,15 +341,19 @@ class impact_management(object):
         del_elast_mat = np.zeros((len(cos_theta_test), len(E_impact_eV_test)))
         print('Extracting SEY curves...')
         for i_ct, ct in enumerate(cos_theta_test):
-            print('%d/%d'%(i_ct+1, len(cos_theta_test))) 
+            print('%d/%d'%(i_ct+1, len(cos_theta_test)))
             for i_ene, Ene in enumerate(E_impact_eV_test):
-                
-                nel_emit, flag_elast, flag_truesec = sey_mod.SEY_process(nel_impact=np.ones(n_rep), 
+
+
+                if switch_model == 'Furman-Pivi':
+                    pass
+                else:
+                    nel_emit, flag_elast, flag_truesec = sey_mod.SEY_process(nel_impact=np.ones(n_rep),
                                 E_impact_eV=Ene*np.ones(n_rep), costheta_impact=np.ones(n_rep)*ct, i_impact=np.array(n_rep*[0]))
-                                
+
                 del_true_mat[i_ct, i_ene] = np.mean(nel_emit)*float(np.sum(flag_truesec))/float(n_rep)
                 del_elast_mat[i_ct, i_ene] = np.mean(nel_emit)*float(np.sum(flag_elast))/float(n_rep)
-        print('Done extracting SEY curves.')       
-        
+        print('Done extracting SEY curves.')
+
         return del_true_mat, del_elast_mat
 

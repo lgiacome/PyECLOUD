@@ -116,7 +116,7 @@ class impact_management_furman_pivi(impact_management_class.impact_management):
                 En_imp_hist[En_imp_hist>En_hist_max]=En_hist_max
                 histf.compute_hist(En_imp_hist,nel_impact,0.,DEn_hist,self.En_hist_line)
 
-                nel_emit, flag_elast, flag_backscattered, flag_truesec = \
+                nel_emit, flag_elast, flag_rediffused, flag_truesec = \
                     sey_mod.SEY_process(nel_impact,E_impact_eV, costheta_impact, i_found)
 
                 self.Nel_impact_last_step=np.sum(nel_impact)
@@ -129,6 +129,9 @@ class impact_management_furman_pivi(impact_management_class.impact_management):
                 vx_emit[flag_elast]=vx_impact[flag_elast]-2*v_impact_n[flag_elast]*Norm_x[flag_elast]
                 vy_emit[flag_elast]=vy_impact[flag_elast]-2*v_impact_n[flag_elast]*Norm_y[flag_elast]
                 vz_emit[flag_elast]=vz_impact[flag_elast]
+
+                # Rediffused electrons
+
 
 
                 # true secondary
