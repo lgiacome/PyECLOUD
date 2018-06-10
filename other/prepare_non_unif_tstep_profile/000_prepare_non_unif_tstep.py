@@ -16,7 +16,7 @@ filling_pattern = 1*(30*[1.]+5*[0])
 
 b_spac = 25e-9
 
-Dt = 2.500000e-11
+Dt = 2.500000e-11/5
 t_end=1e-9;
 
 # Parameters of the non-unif 
