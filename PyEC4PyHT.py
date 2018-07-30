@@ -327,11 +327,12 @@ class Ecloud(object):
         if self.cloudsim.config_dict['Dt'] is not None:
             if dt_slice>self.cloudsim.config_dict['Dt']:
                 if interact_with_EC: 
-                    raise ValueError('Slices that interact with the cloud cannot be longer than the buildup timestep!')
-
-                N_cloud_steps = np.int_(np.ceil(dt_slice/self.cloudsim.config_dict['Dt']))
-                dt_cloud_step = dt_slice/N_cloud_steps
-                dt_array = np.array(N_cloud_steps*[dt_cloud_step])
+                    dt_array = np.array([dt_slice])
+                    #~ raise ValueError('Slices that interact with the cloud cannot be longer than the buildup timestep!')
+                else:
+                    N_cloud_steps = np.int_(np.ceil(dt_slice/self.cloudsim.config_dict['Dt']))
+                    dt_cloud_step = dt_slice/N_cloud_steps
+                    dt_array = np.array(N_cloud_steps*[dt_cloud_step])
             else:
                 dt_array = np.array([dt_slice])
         else:
