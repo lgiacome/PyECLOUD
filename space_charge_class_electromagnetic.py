@@ -53,8 +53,16 @@ import numpy as np
 from space_charge_class import space_charge
 from scipy.constants import c, epsilon_0, mu_0, e
 import int_field_for as iff
+import multiprocessing as mp
 
 na = lambda x: np.array([x])
+
+def target_solve(PyPICobj):
+    PyPICobj.solve()
+
+def target_solve_state(PyPICobj, stateObj):
+    self.PyPICobj.solve_states([stateObj])
+
 
 class space_charge_electromagnetic(space_charge, object):
 
@@ -100,8 +108,13 @@ class space_charge_electromagnetic(space_charge, object):
 
         # solve
         if flag_solve:
-            self.PyPICobj.solve()
-            self.PyPICobj.solve_states([self.state_Ax, self.state_Ay, self.state_As])
+            pool = mp.Pool(2)
+            pool.apply_async(target_solve, args = (self.PyPICobj,))
+            pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_Ax,))
+            pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_Ay,))
+            pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_As,))
+            pool.close()
+            pool.join()
 
         #if not first passage compute derivatives
         if self.state_Ax_old != None and self.state_Ax_old != None:
