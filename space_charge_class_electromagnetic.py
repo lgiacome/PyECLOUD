@@ -54,6 +54,8 @@ from space_charge_class import space_charge
 from scipy.constants import c, epsilon_0, mu_0, e
 import int_field_for as iff
 import multiprocessing as mp
+import sys
+from io import BytesIO as StringIO
 
 na = lambda x: np.array([x])
 
@@ -114,7 +116,6 @@ class space_charge_electromagnetic(space_charge, object):
             pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_Ay,))
             pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_As,))
             pool.close()
-            pool.join()
 
         #if not first passage compute derivatives
         if self.state_Ax_old != None and self.state_Ax_old != None:
@@ -126,8 +127,11 @@ class space_charge_electromagnetic(space_charge, object):
             self.dAx_grid_dt = np.zeros((self.Nxg,self.Nyg))
             self.dAy_grid_dt = np.zeros((self.Nxg,self.Nyg))
 
+	text_trap = StringIO()
+	sys.stdout = text_trap
         self.state_Ax_old = self.state_Ax.get_state_object()
         self.state_Ay_old = self.state_Ay.get_state_object()
+	sys.stdout = sys.__stdout__
 
     def get_sc_em_field(self, MP_e):
         #compute un-primed potentials (with wrong sign)
