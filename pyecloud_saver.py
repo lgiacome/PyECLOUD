@@ -58,6 +58,7 @@ import hist_for as histf
 import time
 from scipy.constants import e as qe
 import myloadmat_to_obj as mlm
+
 import shutil
 try:
     # cPickle is faster in python2
@@ -67,6 +68,7 @@ except ImportError:
     import pickle
 
 from space_charge_class import space_charge
+import rhocompute as rhocom
 
 class pyecloud_saver:
 
@@ -262,7 +264,7 @@ class pyecloud_saver:
         self._rho_video_save(spacech_ele, beamtim, rho_cloud)
 
         # Check for save video electric field
-        self._sc_video_save(spacech_ele, beamtim)
+        self._sc_video_save(spacech_ele, beamtim, MP_e)
 
         # Check for energy and cos angle hist update
         self._energy_cos_and_lifetime_angle_hist_save(beamtim, impact_man, MP_e)
@@ -892,11 +894,14 @@ class pyecloud_saver:
                 temp_state_As = spacech_ele.state_As
                 temp_state_Ax_old = spacech_ele.state_Ax_old
                 temp_state_Ay_old = spacech_ele.state_Ay_old
+                temp_pool = spacech_ele.pool
+
                 spacech_ele.state_Ax = None
                 spacech_ele.state_Ay = None
                 spacech_ele.state_As = None
                 spacech_ele.state_Ax_old = None
                 spacech_ele.state_Ay_old = None
+                spacech_ele.pool = None
 
             #~ dynamics.get_B=None
 
@@ -935,6 +940,7 @@ class pyecloud_saver:
                 spacech_ele.state_As = temp_state_As
                 spacech_ele.state_Ax_old = temp_state_Ax_old
                 spacech_ele.state_Ay_old = temp_state_Ay_old
+                spacech_ele.pool = temp_pool
 
             print('Save simulation state in: ' + outfile)
 
@@ -1008,35 +1014,88 @@ class pyecloud_saver:
     def _sc_video_init(self, flag_sc_movie):
         #efield video
         self.flag_sc_video = (flag_sc_movie == 1)
-        self.efx_video = None
-        self.efy_video = None
+        self.efx_video=None
+        self.efy_video=None
+        self.Fefx_video = None
+        self.Fefy_video = None
+        self.Fbfx_video = None
+        self.Fbfy_video = None
+        self.Fbfz_video = None
         self.t_efield_video = None
 
-    def _sc_video_save(self, spacech_ele, beamtim):
+    def _sc_video_save(self, spacech_ele, beamtim, MP_e=None):
         #save efield video
         if self.flag_sc_video:
-            if not os.path.exists(self.folder_outp + '/efield_video'):
-                os.makedirs(self.folder_outp + '/efield_video')
-            if self.efx_video is None:
-                self.efx_video = []
-                self.efy_video = []
-                self.t_efield_video = []
-            if spacech_ele.last_recomputation_check:
-                self.efx_video.append(spacech_ele.efx)
-                self.efy_video.append(spacech_ele.efy)
-                self.t_efield_video.append(beamtim.tt_curr)
-            if beamtim.flag_new_bunch_pass:
-                self.efx_video = np.array(self.efx_video)
-                self.efy_video = np.array(self.efy_video)
-                self.t_efield_video = np.array(self.t_efield_video)
-                filename_efield = self.folder_outp + '/efield_video/efield_pass%d.mat'%(beamtim.pass_numb - 1)
-                print('Saving %s'%filename_efield)
-                sio.savemat(filename_efield, {'xg_sc': spacech_ele.xg, 'yg_sc': spacech_ele.yg, 't_efield_video': self.t_efield_video,
+            #if we are using em space charge we need to scatter the fields
+            if spacech_ele.flag_em_tracking:
+
+                Ex_sc_n, Ey_sc_n, Bx_sc_n, By_sc_n, Bz_sc_n = spacech_ele.get_sc_em_field(MP_e)
+
+                Fefx = rhocom.compute_sc_rho(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],qe*np.multiply(MP_e.nel_mp[0:MP_e.N_mp],Ex_sc_n),spacech_ele.bias_x,spacech_ele.bias_y,spacech_ele.Dh,spacech_ele.Nxg,spacech_ele.Nyg)
+                Fefy = rhocom.compute_sc_rho(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],qe*np.multiply(MP_e.nel_mp[0:MP_e.N_mp],Ey_sc_n),spacech_ele.bias_x,spacech_ele.bias_y,spacech_ele.Dh,spacech_ele.Nxg,spacech_ele.Nyg)
+                Fbfx = rhocom.compute_sc_rho(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],qe*np.multiply(MP_e.nel_mp[0:MP_e.N_mp],np.multiply(MP_e.vy_mp[0:MP_e.N_mp],Bz_sc_n)-qe*np.multiply(MP_e.vz_mp[0:MP_e.N_mp],By_sc_n)),spacech_ele.bias_x,spacech_ele.bias_y,spacech_ele.Dh,spacech_ele.Nxg,spacech_ele.Nyg)
+                Fbfy = rhocom.compute_sc_rho(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],qe*np.multiply(MP_e.nel_mp[0:MP_e.N_mp],np.multiply(MP_e.vz_mp[0:MP_e.N_mp],Bx_sc_n)-qe*np.multiply(MP_e.vx_mp[0:MP_e.N_mp],Bz_sc_n)),spacech_ele.bias_x,spacech_ele.bias_y,spacech_ele.Dh,spacech_ele.Nxg,spacech_ele.Nyg)
+                Fbfz = rhocom.compute_sc_rho(MP_e.x_mp[0:MP_e.N_mp],MP_e.y_mp[0:MP_e.N_mp],qe*np.multiply(MP_e.nel_mp[0:MP_e.N_mp],np.multiply(MP_e.vx_mp[0:MP_e.N_mp],By_sc_n)-qe*np.multiply(MP_e.vy_mp[0:MP_e.N_mp],Bx_sc_n)),spacech_ele.bias_x,spacech_ele.bias_y,spacech_ele.Dh,spacech_ele.Nxg,spacech_ele.Nyg)
+
+                if not os.path.exists(self.folder_outp + '/sc_forces_video'):
+                    os.makedirs(self.folder_outp + '/sc_forces_video')
+
+                if self.Fefx_video is None:
+                    self.Fefx_video = []
+                    self.Fefy_video = []
+                    self.Fbfx_video = []
+                    self.Fbfy_video = []
+                    self.Fbfz_video = []
+                    self.t_efield_video = []
+                if spacech_ele.last_recomputation_check:
+                    self.Fefx_video.append(Fefx)
+                    self.Fefy_video.append(Fefy)
+                    self.Fbfx_video.append(Fbfx)
+                    self.Fbfy_video.append(Fbfy)
+                    self.Fbfz_video.append(Fbfz)
+                    self.t_efield_video.append(beamtim.tt_curr)
+                if beamtim.flag_new_bunch_pass:
+                    self.Fefx_video = np.array(self.Fefx_video)
+                    self.Fefy_video = np.array(self.Fefy_video)
+                    self.Fbfx_video = np.array(self.Fbfx_video)
+                    self.Fbfy_video = np.array(self.Fbfy_video)
+                    self.Fbfz_video = np.array(self.Fbfz_video)
+                    self.t_efield_video = np.array(self.t_efield_video)
+                    filename_sc_forces = self.folder_outp + '/sc_forces_video/sc_forces_pass%d.mat'%(beamtim.pass_numb - 1)
+                    print('Saving %s'%filename_sc_forces)
+                    sio.savemat(filename_sc_forces, {'xg_sc': spacech_ele.xg, 'yg_sc': spacech_ele.yg, 't_efield_video': self.t_efield_video,
+                                  'Fefx_video': self.Fefx_video, 'Fefy_video': self.Fefy_video, 'Fbfx_video': self.Fbfx_video, 'Fbfy_video': self.Fbfy_video,
+                                  'Fbfz_video': self.Fbfz_video}, oned_as='row')
+                    print('Done')
+                    self.Fefx_video = []
+                    self.Fefy_video = []
+                    self.Fbfx_video = []
+                    self.Fbfy_video = []
+                    self.Fbfz_video = []
+                    self.t_efield_video = []
+            else:
+                if not os.path.exists(self.folder_outp + '/efield_video'):
+                    os.makedirs(self.folder_outp + '/efield_video')
+                if self.efx_video is None:
+                    self.efx_video = []
+                    self.efy_video = []
+                    self.t_efield_video = []
+                if spacech_ele.last_recomputation_check:
+                    self.efx_video.append(spacech_ele.efx)
+                    self.efy_video.append(spacech_ele.efy)
+                    self.t_efield_video.append(beamtim.tt_curr)
+                if beamtim.flag_new_bunch_pass:
+                    self.efx_video = np.array(self.efx_video)
+                    self.efy_video = np.array(self.efy_video)
+                    self.t_efield_video = np.array(self.t_efield_video)
+                    filename_efield = self.folder_outp + '/efield_video/efield_pass%d.mat'%(beamtim.pass_numb - 1)
+                    print('Saving %s'%filename_efield)
+                    sio.savemat(filename_efield, {'xg_sc': spacech_ele.xg, 'yg_sc': spacech_ele.yg, 't_efield_video': self.t_efield_video,
                                               'efx_video': self.efx_video, 'efy_video': self.efy_video}, oned_as='row')
-                print('Done')
-                self.efx_video = []
-                self.efy_video = []
-                self.t_efield_video = []
+                    print('Done')
+                    self.efx_video = []
+                    self.efy_video = []
+                    self.t_efield_video = []
 
     def _logfile_progressfile_stofile(self, beamtim, MP_e):
             # logfile and progressfile

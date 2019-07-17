@@ -54,6 +54,7 @@ from space_charge_class import space_charge
 from scipy.constants import c, epsilon_0, mu_0, e
 import int_field_for as iff
 import multiprocessing as mp
+
 import sys
 from io import BytesIO as StringIO
 
@@ -63,7 +64,7 @@ def target_solve(PyPICobj):
     PyPICobj.solve()
 
 def target_solve_state(PyPICobj, stateObj):
-    self.PyPICobj.solve_states([stateObj])
+    PyPICobj.solve_states([stateObj])
 
 
 class space_charge_electromagnetic(space_charge, object):
@@ -88,7 +89,7 @@ class space_charge_electromagnetic(space_charge, object):
         self.Ay_old_grid = np.zeros((self.Nxg,self.Nyg))
         self.dAx_grid_dt = np.zeros((self.Nxg,self.Nyg))
         self.dAy_grid_dt = np.zeros((self.Nxg,self.Nyg))
-
+        self.pool = mp.Pool(2)
         self.gamma = gamma
         self.beta = np.sqrt(1-1/(gamma*gamma))
 
@@ -110,12 +111,10 @@ class space_charge_electromagnetic(space_charge, object):
 
         # solve
         if flag_solve:
-            pool = mp.Pool(2)
-            pool.apply_async(target_solve, args = (self.PyPICobj,))
-            pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_Ax,))
-            pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_Ay,))
-            pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_As,))
-            pool.close()
+            self.pool.apply_async(target_solve, args = (self.PyPICobj,))
+            self.pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_Ax,))
+            self.pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_Ay,))
+            self.pool.apply_async(target_solve_state, args = (self.PyPICobj, self.state_As,))
 
         #if not first passage compute derivatives
         if self.state_Ax_old != None and self.state_Ax_old != None:
@@ -127,11 +126,11 @@ class space_charge_electromagnetic(space_charge, object):
             self.dAx_grid_dt = np.zeros((self.Nxg,self.Nyg))
             self.dAy_grid_dt = np.zeros((self.Nxg,self.Nyg))
 
-	text_trap = StringIO()
-	sys.stdout = text_trap
+        text_trap = StringIO()
+        sys.stdout = text_trap
         self.state_Ax_old = self.state_Ax.get_state_object()
         self.state_Ay_old = self.state_Ay.get_state_object()
-	sys.stdout = sys.__stdout__
+        sys.stdout = sys.__stdout__
 
     def get_sc_em_field(self, MP_e):
         #compute un-primed potentials (with wrong sign)
