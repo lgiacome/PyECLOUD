@@ -12,7 +12,7 @@ import PyECLOUD.myloadmat_to_obj as mlo
 
 ob = mlo.myloadmat_to_obj('Pyecltest')
 
-Np = range(280,290)
+Np = range(280,291)
 cmap = mpl.cm.cool
 Ne = 100
 
@@ -28,12 +28,12 @@ for n in Np:
     y = ob.forces_ratio_hist[n,:]/sum(ob.forces_ratio_hist[n,:])
     win = 15
     y_smooth = np.convolve(y, np.ones((win,))/win, mode='same')
-    plt.loglog(y_smooth,color=cmap(i / float(len(Np))))
+    plt.semilogx(y_smooth,color=cmap(i / float(len(Np))))
     i = i + 1
 
 cbar = plt.colorbar(CS)
 ax = cbar.ax
-ax.text(3,0.6,'Bunch passage',rotation=270)
-plt.xlabel(r'$E$')
-plt.ylabel(r'$\phi(E)$')
+ax.text(3,0.6,'Bunch Passage',rotation=270)
+plt.xlabel(r'$||Fe|/||Fb||$')
+plt.title('Fe vs Fb histogram')
 plt.show()
