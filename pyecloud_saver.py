@@ -187,7 +187,6 @@ class pyecloud_saver:
         # Init energy and cos angle histogram saving
         self._energy_cos_and_lifetime_angle_hist_init(Dt_En_hist, flag_cos_angle_hist, cos_angle_width, flag_lifetime_hist, Dt_lifetime_hist)
 
-
         #Space charge electrostatic energy
         self.t_sc_video = []
         self.U_sc_eV = []
@@ -447,7 +446,7 @@ class pyecloud_saver:
                     'dec_fact_out': self.dec_fact_out,
                     'chamber_area': self.area,
                     'cos_angle_hist': self.cos_angle_hist,
-                    'xg_hist_cos_angle': self.xg_hist_cos_angle
+                    'xg_hist_cos_angle': self.xg_hist_cos_angle,
         }
 
         if self.flag_lifetime_hist:
