@@ -89,7 +89,7 @@ class space_charge_electromagnetic(space_charge, object):
         self.Ay_old_grid = np.zeros((self.Nxg,self.Nyg))
         self.dAx_grid_dt = np.zeros((self.Nxg,self.Nyg))
         self.dAy_grid_dt = np.zeros((self.Nxg,self.Nyg))
-        self.pool = mp.Pool(2)
+        self.pool = mp.Pool(4)
         self.gamma = gamma
         self.beta = np.sqrt(1-1/(gamma*gamma))
 
