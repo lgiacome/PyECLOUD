@@ -266,15 +266,15 @@ class pusher_Boris():
             for ii in range(self.N_sub_steps):
                 # add external B field contributions
                 for i, B_ob in enumerate(self.B_ob_list):
-                    Bx_map, By_map, Bz_n_map = B_ob.get_B(xn1, yn1)
+                    Bx_map, By_map, Bz_map = B_ob.get_B(xn1, yn1)
                     time_fact = self.B_time_func_list[i](self.time)
                     Bx_n += (Bx_map + self.B0x) * time_fact
                     By_n += (By_map + self.B0y) * time_fact
                     Bz_n += (Bz_map + self.B0z) * time_fact
 
                 # add external E field contributions
-                for i, E_ob in enumerate(self.E_ob):
-                    Ex_map, Ey_map, Ez_n_map = self.E_ob_i.get_E(xn1, yn1)
+                for i, E_ob in enumerate(self.E_ob_list):
+                    Ex_map, Ey_map, Ez_map = E_ob.get_E(xn1, yn1)
                     time_fact = self.E_time_func_list[i](self.time)
                     Ex_n += (Ex_map + self.E0x) * time_fact
                     Ey_n += (Ey_map + self.E0y) * time_fact
@@ -313,19 +313,25 @@ class pusher_Boris():
 
             if Ez_n == 0.:
                 Ez_n = 0. * xn1
+            if Bx_n == 0.:
+                Bx_n = 0. * xn1
+            if By_n == 0.:
+                By_n = 0. * xn1
+            if Bz_n == 0.:
+                Bz_n = 0. * xn1
 
             for ii in range(N_sub_steps):
                 # add external B field contributions
                 for i, B_ob in enumerate(self.B_ob_list):
-                    Bx_map, By_map, Bz_n_map = B_ob.get_B(xn1, yn1)
+                    Bx_map, By_map, Bz_map = B_ob.get_B(xn1, yn1)
                     time_fact = self.B_time_func_list[i](self.time)
                     Bx_n += (Bx_map + self.B0x) * time_fact
                     By_n += (By_map + self.B0y) * time_fact
                     Bz_n += (Bz_map + self.B0z) * time_fact
 
                 # add external E field contributions
-                for i, E_ob in enumerate(self.E_ob):
-                    Ex_map, Ey_map, Ez_n_map = self.E_ob_i.get_E(xn1, yn1)
+                for i, E_ob in enumerate(self.E_ob_list):
+                    Ex_map, Ey_map, Ez_map = E_ob.get_E(xn1, yn1)
                     time_fact = self.E_time_func_list[i](self.time)
                     Ex_n += (Ex_map + self.E0x) * time_fact
                     Ey_n += (Ey_map + self.E0y) * time_fact
@@ -334,7 +340,7 @@ class pusher_Boris():
                            Ex_n, Ey_n, Ez_n, Bx_n, By_n, Bz_n, mass, charge)
 
                 # advance time
-                self.time += self.Dt_substep
+                self.time += Dt_substep
 
             MP_e.x_mp[0:MP_e.N_mp] = xn1
             MP_e.y_mp[0:MP_e.N_mp] = yn1
