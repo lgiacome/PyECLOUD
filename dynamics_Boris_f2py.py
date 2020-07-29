@@ -216,7 +216,7 @@ class pusher_Boris():
                              'same length'))
 
         # initialize external field objects
-        for i, B_map_file in enumerate(B_map_file_list):
+        for i, B_map_file in enumerate(self.B_map_file_list):
             if B_map_file is None:
                 self.B_ob_list.append(B_none())
 
@@ -228,7 +228,7 @@ class pusher_Boris():
                 self.B_ob_list.append(B_file(fact_Bmap_list[i],
                                              B_map_file_list[i]))
 
-        for i, E_map_file in enumerate(E_map_file_list):
+        for i, E_map_file in enumerate(self.E_map_file_list):
             if E_map_file is None:
                 self.E_ob_list.append(E_none())
 
