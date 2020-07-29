@@ -222,19 +222,19 @@ class pusher_Boris():
 
             elif B_map_file is 'analytic_qaudrupole_unit_grad':
                 print("B map analytic quadrupole")
-                self.B_ob_list.append(B_quad(fact_Bmap))
+                self.B_ob_list.append(B_quad(self.fact_Bmap_list[i]))
 
             else:
-                self.B_ob_list.append(B_file(fact_Bmap_list[i],
-                                             B_map_file_list[i]))
+                self.B_ob_list.append(B_file(self.fact_Bmap_list[i],
+                                             self.B_map_file_list[i]))
 
         for i, E_map_file in enumerate(self.E_map_file_list):
             if E_map_file is None:
                 self.E_ob_list.append(E_none())
 
             else:
-                self.E_ob_list.append(E_file(fact_Emap_list[i],
-                                             E_map_file[i]))
+                self.E_ob_list.append(E_file(self.fact_Emap_list[i],
+                                             self.E_map_file[i]))
 
         print("N_subst_init=%d" % self.N_sub_steps)
 
