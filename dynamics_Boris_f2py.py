@@ -50,7 +50,7 @@
 #
 # -End-preamble---------------------------------------------------------
 
-from numpy import array, cross, sum, squeeze
+from numpy import array, cross, sum, squeeze, min
 import scipy.io as sio
 from . import int_field_for as iff
 from .boris_step import boris_step
