@@ -234,7 +234,7 @@ class pusher_Boris():
 
             else:
                 self.E_ob_list.append(E_file(self.fact_Emap_list[i],
-                                             self.E_map_file[i]))
+                                             self.E_map_file_list[i]))
 
         print("N_subst_init=%d" % self.N_sub_steps)
 
