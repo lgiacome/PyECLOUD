@@ -205,13 +205,13 @@ class pusher_Boris():
         self.E_ob_list = []
 
         # raise an exception if the length of the lists do not correspond
-        if not (len(B_map_file_list) == len(fact_Bmap_list)
-                == len(B_time_func_list)):
+        if not (len(self.B_map_file_list) == len(self.fact_Bmap_list)
+                == len(self.B_time_func_list)):
             raise(ValueError('B_map_file, fact_Bmap, B_time_func must have '
                              'same length'))
 
-        if not (len(E_map_file_list) == len(fact_Emap_list)
-                == len(E_time_func_list)):
+        if not (len(self.E_map_file_list) == len(self.fact_Emap_list)
+                == len(self.E_time_func_list)):
             raise(ValueError('E_map_file, fact_Emap, E_time_Eunc must have '
                              'same length'))
 
