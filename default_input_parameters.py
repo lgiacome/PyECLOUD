@@ -148,10 +148,18 @@ parameters_dict = {
             'bm_totlen': -1,  # m
             'B_map_file': None,
             'Bz_map_file': None, # documented?
+            'B_time_func': None,
             'fact_Bmap': 1.,
+            'E_map_file': None,
+            'Ez_map_file': None,  # documented?
+            'E_time_func': None,
+            'fact_Emap': 1.,
             'B0x': None,
             'B0y': None,
             'B0z': None,
+            'E0x': None,
+            'E0y': None,
+            'E0z': None,
             'B_zero_thrhld': None,
             'N_sub_steps': 1,
             'B_multip': [],
