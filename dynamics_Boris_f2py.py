@@ -1,4 +1,4 @@
-# -Begin-preamble-------------------------------------------------------
+#-Begin-preamble-------------------------------------------------------
 #
 #                           CERN
 #
@@ -48,7 +48,7 @@
 #     The material cannot be sold. CERN should be  given  credit  in
 #     all references.
 #
-# -End-preamble---------------------------------------------------------
+#-End-preamble---------------------------------------------------------
 
 from numpy import array, cross, sum, squeeze, min
 import scipy.io as sio
@@ -238,7 +238,7 @@ class pusher_Boris():
 
         print("N_subst_init=%d" % self.N_sub_steps)
 
-    # @profile
+    #@profile
     def step(self, MP_e, Ex_n, Ey_n, Ez_n=0., Bx_n=0., By_n=0., Bz_n=0.):
 
         if MP_e.N_mp > 0:
