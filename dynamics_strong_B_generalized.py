@@ -168,22 +168,29 @@ class pusher_strong_B_generalized():
             if Bz_n == 0.:
                 Bz_n = 0. * xn
 
-            for ii in range(self.N_sub_steps):
-                # add external B field contributions
-                for i, B_ob in enumerate(self.B_ob_list):
-                    Bx_map, By_map, Bz_n_map = B_ob.get_B(xn, yn)
-                    time_fact = self.B_time_func_list[i](self.time)
-                    Bx_n += (Bx_map + self.B0x) * time_fact
-                    By_n += (By_map + self.B0y) * time_fact
-                    Bz_n += (Bz_map + self.B0z) * time_fact
+            # add external B field contributions
+            for i, B_ob in enumerate(self.B_ob_list):
+                Bx_map, By_map, Bz_n_map = B_ob.get_B(xn1, yn1)
+                time_fact = self.B_time_func_list[i](self.time)
+                Bx_n += Bx_map * time_fact
+                By_n += By_map * time_fact
+                Bz_n += Bz_map * time_fact
 
-                # add external E field contributions
-                for i, E_ob in enumerate(self.E_ob):
-                    Ex_map, Ey_map, Ez_n_map = self.E_ob_i.get_E(xn, yn)
-                    time_fact = self.E_time_func_list[i](self.time)
-                    Ex_n += (Ex_map + self.E0x) * time_fact
-                    Ey_n += (Ey_map + self.E0y) * time_fact
-                    Ez_n += (Ez_map + self.E0z) * time_fact
+            Bx_n += self.B0x
+            By_n += self.B0y
+            Bz_n += self.B0z
+
+            # add external E field contributions
+            for i, E_ob in enumerate(self.E_ob):
+                Ex_map, Ey_map, Ez_n_map = self.E_ob_i.get_E(xn1, yn1)
+                time_fact = self.E_time_func_list[i](self.time)
+                Ex_n += Ex_map * time_fact
+                Ey_n += Ey_map * time_fact
+                Ez_n += Ez_map * time_fact
+
+            Ex_n += self.E0x
+            Ey_n += self.E0y
+            Ez_n += self.E0z
 
             #Bx_n = 0*xn + self.B0x
             #By_n = 0*xn + self.B0y
