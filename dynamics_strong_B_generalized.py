@@ -54,7 +54,7 @@
 from numpy import sqrt, sin, cos, squeeze, sum
 import scipy.io as sio
 from . import int_field_for as iff
-from .dynamics_Boris_f2py import E_none, B_none, E_file, B_file, B_quad
+from .dynamics_Boris_f2py import E_file, B_file, B_quad
 from .dynamics_Boris_f2py import const_func, input_to_list
 me = 9.10938291e-31
 qe = 1.602176565e-19
@@ -112,24 +112,21 @@ class pusher_strong_B_generalized():
                              'same length'))
 
         for i, B_map_file in enumerate(self.B_map_file_list):
-            if B_map_file is None:
-                self.B_ob_list.append(B_none())
+            if B_map_file is not None:
+                if B_map_file is 'analytic_qaudrupole_unit_grad':
+                    print("B map analytic quadrupole")
+                    self.B_ob_list.append(B_quad(self.fact_Bmap_list[i]))
 
-            elif B_map_file is 'analytic_qaudrupole_unit_grad':
-                print("B map analytic quadrupole")
-                self.B_ob_list.append(B_quad(self.fact_Bmap_list[i]))
-
-            else:
-                self.B_ob_list.append(B_file(self.fact_Bmap_list[i],
-                                             self.B_map_file_list[i]))
+                else:
+                    self.B_ob_list.append(B_file(self.fact_Bmap_list[i],
+                                                 self.B_map_file_list[i]))
 
         for i, E_map_file in enumerate(self.E_map_file_list):
-            if E_map_file is None:
-                self.E_ob_list.append(E_none())
-
-            else:
+            if E_map_file is not None:
                 self.E_ob_list.append(E_file(self.fact_Emap_list[i],
                                              self.E_map_file_list[i]))
+
+        self.time = 0.
 
             #            ####Debug
 #            import pylab as pl
@@ -170,7 +167,7 @@ class pusher_strong_B_generalized():
 
             # add external B field contributions
             for i, B_ob in enumerate(self.B_ob_list):
-                Bx_map, By_map, Bz_n_map = B_ob.get_B(xn1, yn1)
+                Bx_map, By_map, Bz_map = B_ob.get_B(xn, yn)
                 time_fact = self.B_time_func_list[i](self.time)
                 Bx_n += Bx_map * time_fact
                 By_n += By_map * time_fact
@@ -181,8 +178,8 @@ class pusher_strong_B_generalized():
             Bz_n += self.B0z
 
             # add external E field contributions
-            for i, E_ob in enumerate(self.E_ob):
-                Ex_map, Ey_map, Ez_n_map = self.E_ob_i.get_E(xn1, yn1)
+            for i, E_ob in enumerate(self.E_ob_list):
+                Ex_map, Ey_map, Ez_map = E_ob.get_E(xn, yn)
                 time_fact = self.E_time_func_list[i](self.time)
                 Ex_n += Ex_map * time_fact
                 Ey_n += Ey_map * time_fact
@@ -246,5 +243,7 @@ class pusher_strong_B_generalized():
             MP_e.vx_mp[0:MP_e.N_mp] = vxn1
             MP_e.vy_mp[0:MP_e.N_mp] = vyn1
             MP_e.vz_mp[0:MP_e.N_mp] = vzn1
+
+            self.time += self.Dt
 
         return MP_e

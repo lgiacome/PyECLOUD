@@ -64,24 +64,6 @@ def crprod(bx, by, bz, cx, cy, cz):
     return ax, ay, az
 
 
-class B_none():
-
-    def get_B(self, xn, yn):
-        Bx_n = 0 * xn
-        By_n = 0 * xn
-        Bz_n = 0 * xn
-        return Bx_n, By_n, Bz_n
-
-
-class E_none():
-
-    def get_E(self, xn, yn):
-        Ex_n = 0 * xn
-        Ey_n = 0 * xn
-        Ez_n = 0 * xn
-        return Ex_n, Ey_n, Ez_n
-
-
 class B_quad():
 
     def __init__(self, fact_Bmap):
@@ -217,22 +199,17 @@ class pusher_Boris():
 
         # initialize external field objects
         for i, B_map_file in enumerate(self.B_map_file_list):
-            if B_map_file is None:
-                self.B_ob_list.append(B_none())
+            if B_map_file is not None:
+                if B_map_file is 'analytic_qaudrupole_unit_grad':
+                    print("B map analytic quadrupole")
+                    self.B_ob_list.append(B_quad(self.fact_Bmap_list[i]))
 
-            elif B_map_file is 'analytic_qaudrupole_unit_grad':
-                print("B map analytic quadrupole")
-                self.B_ob_list.append(B_quad(self.fact_Bmap_list[i]))
-
-            else:
-                self.B_ob_list.append(B_file(self.fact_Bmap_list[i],
-                                             self.B_map_file_list[i]))
+                else:
+                    self.B_ob_list.append(B_file(self.fact_Bmap_list[i],
+                                                 self.B_map_file_list[i]))
 
         for i, E_map_file in enumerate(self.E_map_file_list):
-            if E_map_file is None:
-                self.E_ob_list.append(E_none())
-
-            else:
+            if E_map_file is not None:
                 self.E_ob_list.append(E_file(self.fact_Emap_list[i],
                                              self.E_map_file_list[i]))
 
@@ -270,7 +247,7 @@ class pusher_Boris():
                 Bz_n_sub = Bz_n.copy() + self.B0z
 
                 for i, B_ob in enumerate(self.B_ob_list):
-                    Bx_map, By_map, Bz_n_map = B_ob.get_B(xn1, yn1)
+                    Bx_map, By_map, Bz_map = B_ob.get_B(xn1, yn1)
                     time_fact = self.B_time_func_list[i](self.time)
                     Bx_n_sub += Bx_map * time_fact
                     By_n_sub += By_map * time_fact
@@ -281,8 +258,8 @@ class pusher_Boris():
                 Ey_n_sub = Ey_n.copy() + self.E0y
                 Ez_n_sub = Ez_n.copy() + self.E0z
 
-                for i, E_ob in enumerate(self.E_ob):
-                    Ex_map, Ey_map, Ez_n_map = self.E_ob_i.get_E(xn1, yn1)
+                for i, E_ob in enumerate(self.E_ob_list):
+                    Ex_map, Ey_map, Ez_map = E_ob.get_E(xn1, yn1)
                     time_fact = self.E_time_func_list[i](self.time)
                     Ex_n_sub += Ex_map * time_fact
                     Ey_n_sub += Ey_map * time_fact
@@ -336,7 +313,7 @@ class pusher_Boris():
                 Bz_n_sub = Bz_n.copy() + self.B0z
 
                 for i, B_ob in enumerate(self.B_ob_list):
-                    Bx_map, By_map, Bz_n_map = B_ob.get_B(xn1, yn1)
+                    Bx_map, By_map, Bz_map = B_ob.get_B(xn1, yn1)
                     time_fact = self.B_time_func_list[i](self.time)
                     Bx_n_sub += Bx_map * time_fact
                     By_n_sub += By_map * time_fact
@@ -347,8 +324,8 @@ class pusher_Boris():
                 Ey_n_sub = Ey_n.copy() + self.E0y
                 Ez_n_sub = Ez_n.copy() + self.E0z
 
-                for i, E_ob in enumerate(self.E_ob):
-                    Ex_map, Ey_map, Ez_n_map = self.E_ob_i.get_E(xn1, yn1)
+                for i, E_ob in enumerate(self.E_ob_list):
+                    Ex_map, Ey_map, Ez_map = E_ob.get_E(xn1, yn1)
                     time_fact = self.E_time_func_list[i](self.time)
                     Ex_n_sub += Ex_map * time_fact
                     Ey_n_sub += Ey_map * time_fact
@@ -358,7 +335,7 @@ class pusher_Boris():
                            Ex_n_sub, Ey_n_sub, Ez_n_sub, Bx_n_sub, By_n_sub,
                            Bz_n_sub, mass, charge)
                 # advance time
-                self.time += self.Dt_substep
+                self.time += Dt_substep
 
             MP_e.x_mp[0:MP_e.N_mp] = xn1
             MP_e.y_mp[0:MP_e.N_mp] = yn1
