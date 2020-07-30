@@ -92,6 +92,8 @@ from . import input_parameters_format_specification as inp_spec
 from . import cloud_manager as cman
 from . import cross_ionization as cion
 
+from . import lattice_elem
+
 def read_parameter_files(pyecl_input_folder='./', skip_beam_files=False):
     simulation_param_file = 'simulation_parameters.input'
 
@@ -477,25 +479,39 @@ def read_input_files_and_init_components(pyecl_input_folder='./', skip_beam=Fals
                                        )
             print('pyeclsaver saves to file: %s' % pyeclsaver.filen_main_outp)
 
+        grid_lattice_elems_B = []
+        grid_lattice_elems_E = []
+
+        for i, B_map_file_i in enumerate(cc.B_map_file):
+            B0x = {True: 0., False: cc.B0x}[cc.B0x[i] is None]
+            B0y = {True: 0., False: cc.B0y}[cc.B0y[i] is None]
+            B0z = {True: 0., False: cc.B0z}[cc.B0z[i] is None]
+            grid_lattice_elems_B.append(lattice_elem.BGriddedElem(B0x, B0y, B0z,
+                                                                  B_map_file[i],
+                                                                  fact_Bmap[i],
+                                                    B_time_func=B_time_func[i]))
+
+        for i, E_map_file_i in enumerate(cc.E_map_file):
+            E0x = {True: 0., False: cc.E0x}[cc.E0x[i] is None]
+            E0y = {True: 0., False: cc.E0y}[cc.E0y[i] is None]
+            E0z = {True: 0., False: cc.E0z}[cc.E0z[i] is None]
+            grid_lattice_elems_E.append(lattice_elem.EGriddedElem(E0x, E0y, E0z,
+                                                                  E_map_file[i],
+                                                                  fact_Emap[i],
+                                                    E_time_func=E_time_func[i]))
+
+
+
         # Init electron tracker
         if cc.track_method == 'Boris':
             if cc.flag_em_tracking == True:
                 raise ValueError("Track_method should be 'BorisMultipole' to use electromagnetic space charge!!")
-            temp_B0x = {True: 0., False: cc.B0x}[cc.B0x is None]
-            temp_B0y = {True: 0., False: cc.B0y}[cc.B0y is None]
-            temp_B0z = {True: 0., False: cc.B0z}[cc.B0z is None]
-            temp_E0x = {True: 0., False: cc.E0x}[cc.E0x is None]
-            temp_E0y = {True: 0., False: cc.E0y}[cc.E0y is None]
-            temp_E0z = {True: 0., False: cc.E0z}[cc.E0z is None]
 
 
-            dynamics = dynB.pusher_Boris(cc.Dt, temp_B0x, temp_B0y, temp_B0z,
-                                         temp_E0x, temp_E0y, temp_E0z,
-                                         cc.B_map_file, cc.fact_Bmap,
-                                         cc.Bz_map_file, cc.E_map_file,
-                                         cc.fact_Emap, cc.Ez_map_file,
-                                         N_sub_steps=thiscloud.N_sub_steps,
-                                         B_time_func=None, E_time_func=None)
+            dynamics = dynB.pusher_Boris(cc.Dt,
+                                         lattice_elems_B=grid_lattice_elems_B,
+                                         lattice_elems_E=grid_lattice_elems_E,
+                                         N_sub_steps=thiscloud.N_sub_steps)
 
         elif cc.track_method == 'StrongBdip':
             if cc.flag_em_tracking == True:
@@ -567,5 +583,5 @@ def read_input_files_and_init_components(pyecl_input_folder='./', skip_beam=Fals
             cloud_list,
             cc.checkpoint_folder,
             cross_ion,
-            cc.flag_reinterp_fields_at_substeps 
+            cc.flag_reinterp_fields_at_substeps
             )
