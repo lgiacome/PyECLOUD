@@ -54,7 +54,8 @@
 from numpy import sqrt, sin, cos, squeeze, sum
 import scipy.io as sio
 from . import int_field_for as iff
-
+from .dynamics_Boris_f2py import E_none, B_none, E_file, B_file, B_quad
+from .dynamics_Boris_f2py import const_func, input_to_list
 me = 9.10938291e-31
 qe = 1.602176565e-19
 qm = qe / me
@@ -62,38 +63,73 @@ qm = qe / me
 
 
 class pusher_strong_B_generalized():
-    def __init__(self, Dt, B0x, B0y, \
-                 B_map_file, fact_Bmap, B_zero_thrhld):
+    def __init__(self, Dt, B0x, B0y, B0z, E0x, E0y, E0z,
+                 B_map_file, fact_Bmap, Bz_map_file,
+                 E_map_file, fact_Emap, Ez_map_file, B_zero_thrhld,
+                 B_time_func=None, E_time_func=None):
 
         print("Tracker: Generalized strong B")
 
         self.Dt = Dt
         self.B0x = B0x
         self.B0y = B0y
+        self.B0z = B0z
+        self.E0x = E0x
+        self.E0y = E0y
+        self.E0z = E0z
+
         self.B_zero_thrhld = B_zero_thrhld
-        if B_map_file is None:
-            self.flag_B_map = False
-            self.analyt_quad_grad1 = False
-        elif B_map_file is 'analytic_qaudrupole_unit_grad':
-            print("B map analytic quadrupole")
-            self.flag_B_map = False
-            self.analyt_quad_grad1 = True
-            self.fact_Bmap = fact_Bmap
-        else:
-            self.flag_B_map = True
-            self.analyt_quad_grad1 = False
-            print('Loading B map')
-            dict_Bmap = sio.loadmat(B_map_file)
 
-            self.Bmap_x = fact_Bmap * squeeze(dict_Bmap['Bx'].real)
-            self.Bmap_y = fact_Bmap * squeeze(dict_Bmap['By'].real)
-            self.xx = squeeze(dict_Bmap['xx'].T)
-            self.yy = squeeze(dict_Bmap['yy'].T)
+        # convert inputs into lists if needed
+        self.B_map_file_list = input_to_list(B_map_file)
+        self.E_map_file_list = input_to_list(E_map_file)
+        self.fact_Bmap_list = input_to_list(fact_Bmap)
+        self.fact_Emap_list = input_to_list(fact_Emap)
 
-            self.xmin = min(self.xx)
-            self.ymin = min(self.yy)
-            self.dx = self.xx[1] - self.xx[0]
-            self.dy = self.yy[1] - self.yy[0]
+        # if no time dependence is specified, use constant
+        if B_time_func is None:
+            B_time_func = [const_func]*len(self.fact_Bmap_list)
+
+        if E_time_func is None:
+            E_time_func = [const_func]*len(self.fact_Emap_list)
+
+        # convert inputs into lists if needed
+        self.B_time_func_list = input_to_list(B_time_func)
+        self.E_time_func_list = input_to_list(E_time_func)
+
+        self.B_ob_list = []
+        self.E_ob_list = []
+
+        # raise an exception if the length of the lists do not match
+        if not (len(self.B_map_file_list) == len(self.fact_Bmap_list)
+                == len(self.B_time_func_list)):
+            raise(ValueError('B_map_file, fact_Bmap, B_time_func must have '
+                             'same length'))
+
+        if not (len(self.E_map_file_list) == len(self.fact_Emap_list)
+                == len(self.E_time_func_list)):
+            raise(ValueError('E_map_file, fact_Emap, E_time_Eunc must have '
+                             'same length'))
+
+        for i, B_map_file in enumerate(self.B_map_file_list):
+            if B_map_file is None:
+                self.B_ob_list.append(B_none())
+
+            elif B_map_file is 'analytic_qaudrupole_unit_grad':
+                print("B map analytic quadrupole")
+                self.B_ob_list.append(B_quad(self.fact_Bmap_list[i]))
+
+            else:
+                self.B_ob_list.append(B_file(self.fact_Bmap_list[i],
+                                             self.B_map_file_list[i]))
+
+        for i, E_map_file in enumerate(self.E_map_file_list):
+            if E_map_file is None:
+                self.E_ob_list.append(E_none())
+
+            else:
+                self.E_ob_list.append(E_file(self.fact_Emap_list[i],
+                                             self.E_map_file_list[i]))
 
             #            ####Debug
 #            import pylab as pl
@@ -122,20 +158,32 @@ class pusher_strong_B_generalized():
             vyn = MP_e.vy_mp[0:MP_e.N_mp]
             vzn = MP_e.vz_mp[0:MP_e.N_mp]
 
-            if self.flag_B_map:
-                Bx_n, By_n = iff.int_field(xn, yn, self.xmin, self.ymin,\
-                                           self.dx, self.dy, self.Bmap_x, self.Bmap_y)
-                # the rescaling factor has already been applied to the map
-            elif self.analyt_quad_grad1:
-                # the rescaling factor has to be applied here
-                Bx_n = self.fact_Bmap * yn.copy()
-                By_n = self.fact_Bmap * xn.copy()
-            else:
-                Bx_n = 0 * xn
-                By_n = 0 * xn
+            # make sure field arrays are initialized
+            if Ez_n == 0.:
+                Ez_n = 0. * xn
+            if Bx_n == 0.:
+                Bx_n = 0. * xn
+            if By_n == 0.:
+                By_n = 0. * xn
+            if Bz_n == 0.:
+                Bz_n = 0. * xn
 
-            Bx_n = Bx_n + self.B0x
-            By_n = By_n + self.B0y
+            for ii in range(self.N_sub_steps):
+                # add external B field contributions
+                for i, B_ob in enumerate(self.B_ob_list):
+                    Bx_map, By_map, Bz_n_map = B_ob.get_B(xn, yn)
+                    time_fact = self.B_time_func_list[i](self.time)
+                    Bx_n += (Bx_map + self.B0x) * time_fact
+                    By_n += (By_map + self.B0y) * time_fact
+                    Bz_n += (Bz_map + self.B0z) * time_fact
+
+                # add external E field contributions
+                for i, E_ob in enumerate(self.E_ob):
+                    Ex_map, Ey_map, Ez_n_map = self.E_ob_i.get_E(xn, yn)
+                    time_fact = self.E_time_func_list[i](self.time)
+                    Ex_n += (Ex_map + self.E0x) * time_fact
+                    Ey_n += (Ey_map + self.E0y) * time_fact
+                    Ez_n += (Ez_map + self.E0z) * time_fact
 
             #Bx_n = 0*xn + self.B0x
             #By_n = 0*xn + self.B0y
